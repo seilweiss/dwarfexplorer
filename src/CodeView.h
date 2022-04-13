@@ -1,15 +1,19 @@
 #pragma once
 
-#include <qplaintextedit.h>
+#include <qwidget.h>
 
 #include "AbstractCodeModel.h"
 
-class CodeView : public QPlainTextEdit
+#include <Qsci/qsciscintilla.h>
+
+class CodeView : public QWidget
 {
 	Q_OBJECT
 
 public:
 	CodeView(QWidget* parent = nullptr);
+
+	void clear();
 
 	AbstractCodeModel* model() const;
 	void setModel(AbstractCodeModel* model);
@@ -19,6 +23,7 @@ public:
 
 private:
 	AbstractCodeModel* m_model;
+	QsciScintilla* m_editor;
 	Code m_code;
 
 	void refresh();

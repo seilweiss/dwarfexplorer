@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dwarfexplorer", "dwarfexplorer.vcxproj", "{3F8F0AAA-970E-33B2-A77F-5938F9326E41}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qscintilla", "qscintilla\src\qscintilla.vcxproj", "{370F4981-A131-3267-9108-188CE909744B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -15,6 +17,10 @@ Global
 		{3F8F0AAA-970E-33B2-A77F-5938F9326E41}.Debug|x64.Build.0 = Debug|x64
 		{3F8F0AAA-970E-33B2-A77F-5938F9326E41}.Release|x64.ActiveCfg = Release|x64
 		{3F8F0AAA-970E-33B2-A77F-5938F9326E41}.Release|x64.Build.0 = Release|x64
+		{370F4981-A131-3267-9108-188CE909744B}.Debug|x64.ActiveCfg = Debug|x64
+		{370F4981-A131-3267-9108-188CE909744B}.Debug|x64.Build.0 = Debug|x64
+		{370F4981-A131-3267-9108-188CE909744B}.Release|x64.ActiveCfg = Release|x64
+		{370F4981-A131-3267-9108-188CE909744B}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

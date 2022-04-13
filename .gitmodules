@@ -1,0 +1,3 @@
+[submodule "qscintilla"]
+	path = qscintilla
+	url = https://github.com/opencor/qscintilla

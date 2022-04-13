@@ -1661,7 +1661,7 @@ void CppCodeModel::writeIndent(Code& code)
 {
 	for (int i = 0; i < m_indentLevel; i++)
 	{
-		code.addToken("\t");
+		code.addToken("    ");
 	}
 }
 
