@@ -23,8 +23,11 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
 	false, // writeDwarfEntryOffsets
 	true, // writeClassSizes
 	true, // writeClassMemberOffsets
+	true, // writeClassMemberBitOffsets
+	true, // writeClassMemberBitSizes
 	true, // writeVariableAddresses
-	true, // writeFunctionMangledName
+	true, // writeVariableMangledNames
+	true, // writeFunctionMangledNames
 	true, // writeFunctionAddresses
 	false, // writeFunctionSizes
 	true, // writeFunctionVariableLocations
@@ -261,6 +264,9 @@ void CppCodeModel::parseMember(DwarfEntry* entry, Cpp::ClassType& c)
 	m.entry = entry;
 	m.access = Cpp::Keyword::Public;
 	m.offset = 0;
+	m.isBitfield = false;
+	m.bitOffset = 0;
+	m.bitSize = 0;
 
 	DwarfAttribute* typeAttribute = nullptr;
 	DwarfAttribute* locationAttribute = nullptr;
@@ -298,6 +304,16 @@ void CppCodeModel::parseMember(DwarfEntry* entry, Cpp::ClassType& c)
 		// Location attribute
 		case DW_AT_location:
 			locationAttribute = attr;
+			break;
+
+		// Bitfield attributes
+		case DW_AT_bit_offset:
+			m.isBitfield = true;
+			m.bitOffset = attr->data2;
+			break;
+		case DW_AT_bit_size:
+			m.isBitfield = true;
+			m.bitSize = attr->data4;
 			break;
 
 		// Unknown attribute
@@ -375,6 +391,11 @@ void CppCodeModel::parseInheritance(DwarfEntry* entry, Cpp::ClassType& c)
 			in.isVirtual = true;
 			break;
 
+		// Ignored attributes
+		case DW_AT_name:
+		case DW_AT_location:
+			break;
+
 		// Unknown attribute
 		default:
 			warnUnknownAttribute(attr, entry);
@@ -422,6 +443,10 @@ void CppCodeModel::parseEnumerationType(DwarfEntry* entry, Cpp::File& file)
 		// Element list attribute
 		case DW_AT_element_list:
 			elementListAttribute = attr;
+			break;
+
+		// Ignored attributes
+		case DW_AT_byte_size:
 			break;
 
 		// Unknown attribute
@@ -864,6 +889,11 @@ void CppCodeModel::parseVariable(DwarfEntry* entry, Cpp::File& f)
 		// Location attribute
 		case DW_AT_location:
 			locationAttribute = attr;
+			break;
+
+		// Metrowerks mangled name attribute
+		case DW_AT_mangled:
+			v.mangledName = attr->string;
 			break;
 
 		// Unknown attribute
@@ -1481,6 +1511,15 @@ void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
 void CppCodeModel::writeClassMember(Code& code, Cpp::ClassMember& m)
 {
 	writeDeclaration(code, m);
+
+	if (m.isBitfield)
+	{
+		writeSpace(code);
+		writePunctuation(code, ":");
+		writeSpace(code);
+		writeLiteral(code, QString("%1").arg(m.bitSize));
+	}
+
 	writePunctuation(code, ";");
 
 	QStringList comment;
@@ -1493,6 +1532,19 @@ void CppCodeModel::writeClassMember(Code& code, Cpp::ClassMember& m)
 	if (m_settings.writeDwarfEntryOffsets)
 	{
 		comment += QString("DWARF: %1").arg(Util::hexToString(m.entry->offset));
+	}
+
+	if (m.isBitfield)
+	{
+		if (m_settings.writeClassMemberBitOffsets)
+		{
+			comment += QString("Bit Offset: %1").arg(m.bitOffset);
+		}
+
+		if (m_settings.writeClassMemberBitSizes)
+		{
+			comment += QString("Bit Size: %1").arg(m.bitSize);
+		}
 	}
 
 	if (!comment.isEmpty())
@@ -1645,10 +1697,22 @@ void CppCodeModel::writeVariable(Code& code, Cpp::Variable& v)
 	writeDeclaration(code, v);
 	writePunctuation(code, ";");
 
+	QStringList comment;
+
+	if (m_settings.writeVariableMangledNames && !v.mangledName.isEmpty())
+	{
+		comment += v.mangledName;
+	}
+
 	if (m_settings.writeVariableAddresses)
 	{
+		comment += QString("Address: %1").arg(Util::hexToString(v.address));
+	}
+
+	if (!comment.isEmpty())
+	{
 		writeSpace(code);
-		writeComment(code, QString("Address: %1").arg(Util::hexToString(v.address)));
+		writeComment(code, comment.join(", "));
 	}
 }
 
@@ -1660,7 +1724,7 @@ void CppCodeModel::writeFunctionDeclaration(Code& code, Cpp::Function& f, bool i
 
 void CppCodeModel::writeFunctionDefinition(Code& code, Cpp::Function& f)
 {
-	if (m_settings.writeFunctionMangledName)
+	if (m_settings.writeFunctionMangledNames)
 	{
 		writeComment(code, f.mangledName);
 		writeNewline(code);

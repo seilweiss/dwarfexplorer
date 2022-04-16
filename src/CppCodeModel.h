@@ -92,6 +92,9 @@ namespace Cpp
 	{
 		Keyword access;
 		int offset;
+		bool isBitfield;
+		int bitOffset;
+		int bitSize;
 	};
 
 	struct ClassInheritance
@@ -170,6 +173,7 @@ namespace Cpp
 	{
 		bool isGlobal;
 		Elf32_Addr address;
+		QString mangledName;
 	};
 
 	struct File
@@ -193,8 +197,11 @@ struct CppCodeModelSettings
 	bool writeDwarfEntryOffsets;
 	bool writeClassSizes;
 	bool writeClassMemberOffsets;
+	bool writeClassMemberBitOffsets;
+	bool writeClassMemberBitSizes;
 	bool writeVariableAddresses;
-	bool writeFunctionMangledName;
+	bool writeVariableMangledNames;
+	bool writeFunctionMangledNames;
 	bool writeFunctionAddresses;
 	bool writeFunctionSizes;
 	bool writeFunctionVariableLocations;
