@@ -1102,7 +1102,7 @@ void CppCodeModel::warnUnknownAttribute(DwarfAttribute* attribute, DwarfEntry* e
 		.arg(entry->getName()));
 }
 
-void CppCodeModel::writeDwarfEntry(Code& code, Elf32_Off offset)
+void CppCodeModel::writeDwarfEntry(QString& code, Elf32_Off offset)
 {
 	resetIndent();
 
@@ -1147,7 +1147,7 @@ void CppCodeModel::writeDwarfEntry(Code& code, Elf32_Off offset)
 	}
 }
 
-void CppCodeModel::writeFile(Code& code, const QString& path)
+void CppCodeModel::writeFile(QString& code, const QString& path)
 {
 	if (!m_pathToOffsetMultiMap.contains(path))
 	{
@@ -1157,7 +1157,7 @@ void CppCodeModel::writeFile(Code& code, const QString& path)
 	writeFiles(code, m_pathToOffsetMultiMap.values(path));
 }
 
-void CppCodeModel::writeFiles(Code& code, const QList<Elf32_Off>& fileOffsets)
+void CppCodeModel::writeFiles(QString& code, const QList<Elf32_Off>& fileOffsets)
 {
 	if (fileOffsets.isEmpty())
 	{
@@ -1272,7 +1272,7 @@ void CppCodeModel::writeFiles(Code& code, const QList<Elf32_Off>& fileOffsets)
 	}
 }
 
-void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
+void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInline)
 {
 	QStringList comment;
 
@@ -1296,15 +1296,12 @@ void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
 
 	if (!isInline && !c.name.isEmpty())
 	{
-		writeSpace(code);
-		writeIdentifier(code, c.name);
+		code += QString(" %1").arg(c.name);
 	}
 
 	if (!c.inheritances.isEmpty())
 	{
-		writeSpace(code);
-		writePunctuation(code, ":");
-		writeSpace(code);
+		code += " : ";
 
 		for (int i = 0; i < c.inheritances.size(); i++)
 		{
@@ -1323,7 +1320,7 @@ void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
 			if (explicitAccess)
 			{
 				writeKeyword(code, in.access);
-				writeSpace(code);
+				code += " ";
 			}
 
 			writeTypePrefix(code, in.type);
@@ -1331,14 +1328,13 @@ void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
 
 			if (i < c.inheritances.size() - 1)
 			{
-				writePunctuation(code, ",");
-				writeSpace(code);
+				code += ", ";
 			}
 		}
 	}
 	
 	writeNewline(code);
-	writePunctuation(code, "{");
+	code += "{";
 
 	bool empty = true;
 
@@ -1412,7 +1408,7 @@ void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
 				}
 
 				writeKeyword(code, m.access);
-				writePunctuation(code, ":");
+				code += ":";
 			}
 
 			writeNewline(code);
@@ -1484,7 +1480,7 @@ void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
 				}
 
 				writeKeyword(code, f.memberAccess);
-				writePunctuation(code, ":");
+				code += ":";
 			}
 
 			writeNewline(code);
@@ -1505,22 +1501,19 @@ void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
 		writeNewline(code);
 	}
 	
-	writePunctuation(code, "};");
+	code += "};";
 }
 
-void CppCodeModel::writeClassMember(Code& code, Cpp::ClassMember& m)
+void CppCodeModel::writeClassMember(QString& code, Cpp::ClassMember& m)
 {
 	writeDeclaration(code, m);
 
 	if (m.isBitfield)
 	{
-		writeSpace(code);
-		writePunctuation(code, ":");
-		writeSpace(code);
-		writeLiteral(code, QString("%1").arg(m.bitSize));
+		code += QString(" : %1").arg(m.bitSize);
 	}
 
-	writePunctuation(code, ";");
+	code += ";";
 
 	QStringList comment;
 
@@ -1549,12 +1542,12 @@ void CppCodeModel::writeClassMember(Code& code, Cpp::ClassMember& m)
 
 	if (!comment.isEmpty())
 	{
-		writeSpace(code);
+		code += " ";
 		writeComment(code, comment.join(", "));
 	}
 }
 
-void CppCodeModel::writeEnumType(Code& code, Cpp::EnumType& e, bool isInline)
+void CppCodeModel::writeEnumType(QString& code, Cpp::EnumType& e, bool isInline)
 {
 	QStringList comment;
 
@@ -1573,12 +1566,11 @@ void CppCodeModel::writeEnumType(Code& code, Cpp::EnumType& e, bool isInline)
 
 	if (!isInline && !e.name.isEmpty())
 	{
-		writeSpace(code);
-		writeIdentifier(code, e.name);
+		code += QString(" %1").arg(e.name);
 	}
 
 	writeNewline(code);
-	writePunctuation(code, "{");
+	code += "{";
 
 	if (!e.elements.empty())
 	{
@@ -1596,7 +1588,7 @@ void CppCodeModel::writeEnumType(Code& code, Cpp::EnumType& e, bool isInline)
 
 			if (i < e.elements.size() - 1)
 			{
-				writePunctuation(code, ",");
+				code += ",";
 			}
 
 			prevValue = el.value;
@@ -1606,31 +1598,29 @@ void CppCodeModel::writeEnumType(Code& code, Cpp::EnumType& e, bool isInline)
 	}
 
 	writeNewline(code);
-	writePunctuation(code, "};");
+	code += "};";
 }
 
-void CppCodeModel::writeEnumElement(Code& code, Cpp::EnumElement& e, bool explicitValue)
+void CppCodeModel::writeEnumElement(QString& code, Cpp::EnumElement& e, bool explicitValue)
 {
-	writeIdentifier(code, e.name);
+	code += e.name;
 
 	if (explicitValue || m_settings.forceExplicitEnumValues)
 	{
-		writeSpace(code);
-		writePunctuation(code, "=");
-		writeSpace(code);
+		code += " = ";
 
 		if (m_settings.hexadecimalEnumValues)
 		{
-			writeLiteral(code, Util::hexToString(e.value));
+			code += Util::hexToString(e.value);
 		}
 		else
 		{
-			writeLiteral(code, QString("%1").arg(e.value));
+			code += QString("%1").arg(e.value);
 		}
 	}
 }
 
-void CppCodeModel::writeArrayType(Code& code, Cpp::ArrayType& a, bool isInline)
+void CppCodeModel::writeArrayType(QString& code, Cpp::ArrayType& a, bool isInline)
 {
 	QStringList comment;
 
@@ -1646,19 +1636,19 @@ void CppCodeModel::writeArrayType(Code& code, Cpp::ArrayType& a, bool isInline)
 	}
 
 	writeKeyword(code, Cpp::Keyword::Typedef);
-	writeSpace(code);
+	code += " ";
 	writeArrayTypePrefix(code, a);
 
 	if (!isInline && !a.name.isEmpty())
 	{
-		writeIdentifier(code, a.name);
+		code += a.name;
 	}
 
 	writeArrayTypePostfix(code, a);
-	writePunctuation(code, ";");
+	code += ";";
 }
 
-void CppCodeModel::writeFunctionType(Code& code, Cpp::FunctionType& f, bool isInline)
+void CppCodeModel::writeFunctionType(QString& code, Cpp::FunctionType& f, bool isInline)
 {
 	QStringList comment;
 
@@ -1674,28 +1664,28 @@ void CppCodeModel::writeFunctionType(Code& code, Cpp::FunctionType& f, bool isIn
 	}
 
 	writeKeyword(code, Cpp::Keyword::Typedef);
-	writeSpace(code);
+	code += " ";
 	writeFunctionTypePrefix(code, f);
 
 	if (!isInline && !f.name.isEmpty())
 	{
-		writeIdentifier(code, f.name);
+		code += f.name;
 	}
 
 	writeFunctionTypePostfix(code, f);
-	writePunctuation(code, ";");
+	code += ";";
 }
 
-void CppCodeModel::writeVariable(Code& code, Cpp::Variable& v)
+void CppCodeModel::writeVariable(QString& code, Cpp::Variable& v)
 {
 	if (!v.isGlobal)
 	{
 		writeKeyword(code, Cpp::Keyword::Static);
-		writeSpace(code);
+		code += " ";
 	}
 
 	writeDeclaration(code, v);
-	writePunctuation(code, ";");
+	code += ";";
 
 	QStringList comment;
 
@@ -1711,18 +1701,18 @@ void CppCodeModel::writeVariable(Code& code, Cpp::Variable& v)
 
 	if (!comment.isEmpty())
 	{
-		writeSpace(code);
+		code += " ";
 		writeComment(code, comment.join(", "));
 	}
 }
 
-void CppCodeModel::writeFunctionDeclaration(Code& code, Cpp::Function& f, bool isInsideClass)
+void CppCodeModel::writeFunctionDeclaration(QString& code, Cpp::Function& f, bool isInsideClass)
 {
 	writeFunctionSignature(code, f, true, isInsideClass);
-	writePunctuation(code, ";");
+	code += ";";
 }
 
-void CppCodeModel::writeFunctionDefinition(Code& code, Cpp::Function& f)
+void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
 {
 	if (m_settings.writeFunctionMangledNames)
 	{
@@ -1744,7 +1734,7 @@ void CppCodeModel::writeFunctionDefinition(Code& code, Cpp::Function& f)
 
 	writeFunctionSignature(code, f, false, false);
 	writeNewline(code);
-	writePunctuation(code, "{");
+	code += "{";
 
 	increaseIndent();
 
@@ -1757,10 +1747,10 @@ void CppCodeModel::writeFunctionDefinition(Code& code, Cpp::Function& f)
 	decreaseIndent();
 
 	writeNewline(code);
-	writePunctuation(code, "}");
+	code += "}";
 }
 
-void CppCodeModel::writeFunctionSignature(Code& code, Cpp::Function& f, bool isDeclaration, bool isInsideClass)
+void CppCodeModel::writeFunctionSignature(QString& code, Cpp::Function& f, bool isDeclaration, bool isInsideClass)
 {
 	bool isNonStaticMemberFunction = false;
 	bool isConstMemberFunction = false;
@@ -1781,18 +1771,18 @@ void CppCodeModel::writeFunctionSignature(Code& code, Cpp::Function& f, bool isD
 		|| (f.isMember && !isNonStaticMemberFunction && isInsideClass))
 	{
 		writeKeyword(code, Cpp::Keyword::Static);
-		writeSpace(code);
+		code += " ";
 	}
 
 	if (f.isInline)
 	{
 		writeKeyword(code, Cpp::Keyword::Inline);
-		writeSpace(code);
+		code += " ";
 	}
 
 	writeTypePrefix(code, f.type);
 	writeTypePostfix(code, f.type);
-	writeSpace(code);
+	code += " ";
 
 	if (f.isMember && !isInsideClass)
 	{
@@ -1800,67 +1790,64 @@ void CppCodeModel::writeFunctionSignature(Code& code, Cpp::Function& f, bool isD
 
 		Cpp::ClassType& c = m_offsetToClassTypeMap[f.memberTypeOffset];
 
-		writeIdentifier(code, c.name);
-		writePunctuation(code, "::");
+		code += QString("%1::").arg(c.name);
 	}
 
-	writeIdentifier(code, f.name);
+	code += f.name;
 	writeFunctionParameters(code, f, isDeclaration);
 
 	if (isConstMemberFunction)
 	{
-		writeSpace(code);
+		code += " ";
 		writeKeyword(code, Cpp::Keyword::Const);
 	}
 }
 
-void CppCodeModel::writeFunctionVariable(Code& code, Cpp::FunctionVariable& v)
+void CppCodeModel::writeFunctionVariable(QString& code, Cpp::FunctionVariable& v)
 {
 	writeDeclaration(code, v);
-	writePunctuation(code, ";");
+	code += ";";
 
 	if (m_settings.writeFunctionVariableLocations)
 	{
-		writeSpace(code);
+		code += " ";
 		writeComment(code, v.location);
 	}
 }
 
-void CppCodeModel::writeDeclaration(Code& code, Cpp::Declaration& d)
+void CppCodeModel::writeDeclaration(QString& code, Cpp::Declaration& d)
 {
 	writeTypePrefix(code, d.type);
 
 	if (!d.name.isEmpty())
 	{
-		writeSpace(code);
-		writeIdentifier(code, d.name);
+		code += QString(" %1").arg(d.name);
 	}
 
 	writeTypePostfix(code, d.type);
 }
 
-void CppCodeModel::writeTypedef(Code& code, Cpp::Typedef& t)
+void CppCodeModel::writeTypedef(QString& code, Cpp::Typedef& t)
 {
 	writeKeyword(code, Cpp::Keyword::Typedef);
-	writeSpace(code);
+	code += " ";
 	writeTypePrefix(code, t.type);
 
 	if (!t.name.isEmpty())
 	{
-		writeSpace(code);
-		writeIdentifier(code, t.name);
+		code += QString(" %1").arg(t.name);
 	}
 	
 	writeTypePostfix(code, t.type);
-	writePunctuation(code, ";");
+	code += ";";
 }
 
-void CppCodeModel::writeTypePrefix(Code& code, Cpp::Type& t)
+void CppCodeModel::writeTypePrefix(QString& code, Cpp::Type& t)
 {
 	if (t.isConst || t.isVolatile)
 	{
 		writeConstVolatile(code, t.isConst, t.isVolatile);
-		writeSpace(code);
+		code += " ";
 	}
 
 	if (t.isFundamental)
@@ -1895,7 +1882,7 @@ void CppCodeModel::writeTypePrefix(Code& code, Cpp::Type& t)
 		}
 		else
 		{
-			writeIdentifier(code, name);
+			code += name;
 		}
 	}
 
@@ -1905,12 +1892,12 @@ void CppCodeModel::writeTypePrefix(Code& code, Cpp::Type& t)
 
 		if (i < t.modifiers.size() - 1 && (t.modifiers[i].isConst || t.modifiers[i].isVolatile))
 		{
-			writeSpace(code);
+			code += " ";
 		}
 	}
 }
 
-void CppCodeModel::writeTypePostfix(Code& code, Cpp::Type& t)
+void CppCodeModel::writeTypePostfix(QString& code, Cpp::Type& t)
 {
 	if (t.isFundamental)
 	{
@@ -1943,57 +1930,55 @@ void CppCodeModel::writeTypePostfix(Code& code, Cpp::Type& t)
 	}
 }
 
-void CppCodeModel::writeClassTypePrefix(Code& code, Cpp::ClassType& c)
+void CppCodeModel::writeClassTypePrefix(QString& code, Cpp::ClassType& c)
 {
 	writeClassType(code, c, true);
 }
 
-void CppCodeModel::writeClassTypePostfix(Code& code, Cpp::ClassType& c)
+void CppCodeModel::writeClassTypePostfix(QString& code, Cpp::ClassType& c)
 {
 }
 
-void CppCodeModel::writeEnumTypePrefix(Code& code, Cpp::EnumType& e)
+void CppCodeModel::writeEnumTypePrefix(QString& code, Cpp::EnumType& e)
 {
 	writeEnumType(code, e, true);
 }
 
-void CppCodeModel::writeEnumTypePostfix(Code& code, Cpp::EnumType& e)
+void CppCodeModel::writeEnumTypePostfix(QString& code, Cpp::EnumType& e)
 {
 }
 
-void CppCodeModel::writeArrayTypePrefix(Code& code, Cpp::ArrayType& a)
+void CppCodeModel::writeArrayTypePrefix(QString& code, Cpp::ArrayType& a)
 {
 	writeTypePrefix(code, a.type);
 }
 
-void CppCodeModel::writeArrayTypePostfix(Code& code, Cpp::ArrayType& a)
+void CppCodeModel::writeArrayTypePostfix(QString& code, Cpp::ArrayType& a)
 {
 	for (int dimension : a.dimensions)
 	{
-		writePunctuation(code, "[");
-		writeLiteral(code, QString("%1").arg(dimension));
-		writePunctuation(code, "]");
+		code += QString("[%1]").arg(dimension);
 	}
 
 	writeTypePostfix(code, a.type);
 }
 
-void CppCodeModel::writeFunctionTypePrefix(Code& code, Cpp::FunctionType& f)
+void CppCodeModel::writeFunctionTypePrefix(QString& code, Cpp::FunctionType& f)
 {
 	writeTypePrefix(code, f.type);
-	writePunctuation(code, "(");
+	code += "(";
 }
 
-void CppCodeModel::writeFunctionTypePostfix(Code& code, Cpp::FunctionType& f)
+void CppCodeModel::writeFunctionTypePostfix(QString& code, Cpp::FunctionType& f)
 {
-	writePunctuation(code, ")");
+	code += ")";
 	writeFunctionParameters(code, f, true);
 	writeTypePostfix(code, f.type);
 }
 
-void CppCodeModel::writeFunctionParameters(Code& code, Cpp::FunctionType& f, bool isDeclaration)
+void CppCodeModel::writeFunctionParameters(QString& code, Cpp::FunctionType& f, bool isDeclaration)
 {
-	writePunctuation(code, "(");
+	code += "(";
 
 	for (int i = 0; i < f.parameters.size(); i++)
 	{
@@ -2006,15 +1991,14 @@ void CppCodeModel::writeFunctionParameters(Code& code, Cpp::FunctionType& f, boo
 
 		if (i < f.parameters.size() - 1)
 		{
-			writePunctuation(code, ",");
-			writeSpace(code);
+			code += ", ";
 		}
 	}
 
-	writePunctuation(code, ")");
+	code += ")";
 }
 
-void CppCodeModel::writeFunctionParameter(Code& code, Cpp::FunctionParameter& p, bool isDeclaration)
+void CppCodeModel::writeFunctionParameter(QString& code, Cpp::FunctionParameter& p, bool isDeclaration)
 {
 	writeDeclaration(code, p);
 
@@ -2022,51 +2006,47 @@ void CppCodeModel::writeFunctionParameter(Code& code, Cpp::FunctionParameter& p,
 		&& m_settings.writeFunctionVariableLocations
 		&& !p.location.isEmpty())
 	{
-		writeSpace(code);
+		code += " ";
 		writeMultilineComment(code, p.location);
 	}
 }
 
-void CppCodeModel::writeFundamentalType(Code& code, Cpp::FundamentalType t)
+void CppCodeModel::writeFundamentalType(QString& code, Cpp::FundamentalType t)
 {
-	QString text;
-
 	if (m_settings.fundamentalTypeNames.contains(t))
 	{
-		text = m_settings.fundamentalTypeNames[t];
+		code += m_settings.fundamentalTypeNames[t];
 	}
 	else
 	{
-		text = QString("<unknown type %1>").arg(Util::hexToString((quint32)t));
+		code += QString("<unknown type %1>").arg(Util::hexToString((quint32)t));
 	}
-
-	code.addToken(text, QColorConstants::Blue);
 }
 
-void CppCodeModel::writeModifier(Code& code, Cpp::Modifier& m)
+void CppCodeModel::writeModifier(QString& code, Cpp::Modifier& m)
 {
 	if (m.type == Cpp::ModifierType::Pointer)
 	{
-		writePunctuation(code, "*");
+		code += "*";
 	}
 	else if (m.type == Cpp::ModifierType::Reference)
 	{
-		writePunctuation(code, "&");
+		code += "&";
 	}
 
 	if (m.isConst || m.isVolatile)
 	{
-		writeSpace(code);
+		code += " ";
 		writeConstVolatile(code, m.isConst, m.isVolatile);
 	}
 }
 
-void CppCodeModel::writeConstVolatile(Code& code, bool isConst, bool isVolatile)
+void CppCodeModel::writeConstVolatile(QString& code, bool isConst, bool isVolatile)
 {
 	if (isConst && isVolatile)
 	{
 		writeKeyword(code, Cpp::Keyword::Const);
-		writeSpace(code);
+		code += " ";
 		writeKeyword(code, Cpp::Keyword::Volatile);
 	}
 	else if (isConst)
@@ -2079,58 +2059,33 @@ void CppCodeModel::writeConstVolatile(Code& code, bool isConst, bool isVolatile)
 	}
 }
 
-void CppCodeModel::writeIdentifier(Code& code, const QString& text)
-{
-	code.addToken(text, QColorConstants::Black);
-}
-
-void CppCodeModel::writeLiteral(Code& code, const QString& text)
-{
-	code.addToken(text, QColorConstants::Black);
-}
-
-void CppCodeModel::writeKeyword(Code& code, Cpp::Keyword keyword)
+void CppCodeModel::writeKeyword(QString& code, Cpp::Keyword keyword)
 {
 	Q_ASSERT(s_keywordToStringMap.contains(keyword));
 
-	code.addToken(s_keywordToStringMap[keyword], QColorConstants::Blue);
+	code += s_keywordToStringMap[keyword];
 }
 
-void CppCodeModel::writeComment(Code& code, const QString& text)
+void CppCodeModel::writeComment(QString& code, const QString& text)
 {
-	code.addToken(QString("// %1").arg(text), QColorConstants::Gray);
+	code += QString("// %1").arg(text);
 }
 
-void CppCodeModel::writeMultilineComment(Code& code, const QString& text)
+void CppCodeModel::writeMultilineComment(QString& code, const QString& text)
 {
-	code.addToken(QString("/* %1 */").arg(text), QColorConstants::Gray);
+	code += QString("/* %1 */").arg(text);
 }
 
-void CppCodeModel::writePunctuation(Code& code, const QString& text)
+void CppCodeModel::writeNewline(QString& code, bool indent)
 {
-	code.addToken(text, QColorConstants::Black);
-}
-
-void CppCodeModel::writeSpace(Code& code)
-{
-	code.addToken(" ");
-}
-
-void CppCodeModel::writeNewline(Code& code, bool indent)
-{
-	code.addToken("\n");
+	code += "\n";
 
 	if (indent)
 	{
-		writeIndent(code);
-	}
-}
-
-void CppCodeModel::writeIndent(Code& code)
-{
-	for (int i = 0; i < m_indentLevel; i++)
-	{
-		code.addToken("    ");
+		for (int i = 0; i < m_indentLevel; i++)
+		{
+			code += "    ";
+		}
 	}
 }
 

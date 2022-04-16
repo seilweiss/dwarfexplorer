@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Code.h"
 #include "Dwarf.h"
 #include "FilesModel.h"
 #include "TypesModel.h"
@@ -17,8 +16,8 @@ public:
 	Dwarf* dwarf() const;
 	void setDwarf(Dwarf* dwarf);
 
-	virtual void writeDwarfEntry(Code& code, Elf32_Off offset) = 0;
-	virtual void writeFile(Code& code, const QString& path) = 0;
+	virtual void writeDwarfEntry(QString& code, Elf32_Off offset) = 0;
+	virtual void writeFile(QString& code, const QString& path) = 0;
 
 signals:
 	void modelAboutToBeReset();

@@ -57,9 +57,6 @@
     <ClCompile Include="src\FilesView.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Code.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\DwarfAttributes.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
@@ -95,9 +92,6 @@
     <QtMoc Include="src\MainWindow.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <ClInclude Include="src\Code.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\DwarfAttributes.h">
       <Filter>Generated Files</Filter>
     </ClInclude>

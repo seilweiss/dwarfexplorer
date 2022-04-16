@@ -187,7 +187,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\AbstractCodeModel.cpp" />
-    <ClCompile Include="src\Code.cpp" />
     <ClCompile Include="src\CodeView.cpp" />
     <ClCompile Include="src\CppCodeModel.cpp" />
     <ClCompile Include="src\Dwarf.cpp" />
@@ -216,7 +215,6 @@
     <QtMoc Include="src\FilesView.h" />
     <QtMoc Include="src\CodeView.h" />
     <QtMoc Include="src\AbstractCodeModel.h" />
-    <ClInclude Include="src\Code.h" />
     <QtMoc Include="src\CppCodeModel.h" />
     <ClInclude Include="src\Dwarf.h" />
     <QtMoc Include="src\FilesModel.h" />

@@ -86,6 +86,6 @@ void CodeView::viewFile(const QString& path)
 
 void CodeView::refresh()
 {
-	m_editor->setText(m_code.toPlainText());
+	m_editor->setText(m_code);
 	m_editor->setCursorPosition(0, 0);
 }

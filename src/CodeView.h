@@ -24,7 +24,7 @@ public:
 private:
 	AbstractCodeModel* m_model;
 	QsciScintilla* m_editor;
-	Code m_code;
+	QString m_code;
 
 	void refresh();
 };
