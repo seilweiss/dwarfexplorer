@@ -445,6 +445,8 @@ const char* Dwarf::attrNameToString(Elf32_Half name)
     case DW_AT_default_value_data8: return "AT_default_value_data8";
     case DW_AT_default_value_string: return "AT_default_value_string";
     case DW_AT_friends: return "AT_friends";
+    case DW_AT_mangled: return "AT_mangled";
+    case DW_AT_source_info: return "AT_source_info";
     }
 
     sprintf(defaultString, "AT_<unknown 0x%x>", name);

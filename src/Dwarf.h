@@ -110,6 +110,10 @@
 #define DW_AT_lo_user 0x2000
 #define DW_AT_hi_user 0x3ff0
 
+// Metrowerks
+#define DW_AT_mangled (0x2000|DW_FORM_STRING)
+#define DW_AT_source_info (0x2020|DW_FORM_REF)
+
 #define DW_OP_REG 0x01
 #define DW_OP_BASEREG 0x02
 #define DW_OP_ADDR 0x03

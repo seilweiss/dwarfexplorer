@@ -74,6 +74,13 @@ namespace Cpp
 		QList<Modifier> modifiers;
 	};
 
+	struct Typedef
+	{
+		DwarfEntry* entry;
+		Type type;
+		QString name;
+	};
+
 	struct Declaration
 	{
 		DwarfEntry* entry;
@@ -103,6 +110,8 @@ namespace Cpp
 		int size;
 		QList<ClassMember> members;
 		QList<ClassInheritance> inheritances;
+		QList<Typedef> typedefs;
+		QList<Elf32_Off> functionOffsets;
 	};
 
 	struct EnumElement
@@ -139,7 +148,7 @@ namespace Cpp
 		QList<FunctionParameter> parameters;
 	};
 
-	struct LocalVariable : Declaration
+	struct FunctionVariable : Declaration
 	{
 		QString location;
 	};
@@ -150,7 +159,17 @@ namespace Cpp
 		bool isInline;
 		Elf32_Addr startAddress;
 		Elf32_Addr endAddress;
-		QList<LocalVariable> localVariables;
+		bool isMember;
+		Elf32_Off memberTypeOffset;
+		Cpp::Keyword memberAccess;
+		QString mangledName;
+		QList<FunctionVariable> variables;
+	};
+
+	struct Variable : Declaration
+	{
+		bool isGlobal;
+		Elf32_Addr address;
 	};
 
 	struct File
@@ -159,6 +178,7 @@ namespace Cpp
 		QString path;
 		QList<Elf32_Off> typeOffsets;
 		QList<Elf32_Off> functionOffsets;
+		QList<Elf32_Off> variableOffsets;
 	};
 }
 
@@ -167,11 +187,14 @@ struct CppCodeModelSettings
 	bool printUnknownEntries;
 	bool printUnknownAttributes;
 	bool writeTypes;
+	bool writeVariables;
 	bool writeFunctionDeclarations;
 	bool writeFunctionDefinitions;
 	bool writeDwarfEntryOffsets;
 	bool writeClassSizes;
 	bool writeClassMemberOffsets;
+	bool writeVariableAddresses;
+	bool writeFunctionMangledName;
 	bool writeFunctionAddresses;
 	bool writeFunctionSizes;
 	bool writeFunctionVariableLocations;
@@ -204,6 +227,7 @@ private:
 	static CppCodeModelSettings s_defaultSettings;
 	static QHash<Cpp::Keyword, QString> s_keywordToStringMap;
 
+	CppCodeModelSettings m_settings;
 	QMultiMap<QString, Elf32_Off> m_pathToOffsetMultiMap;
 	QHash<Elf32_Off, DwarfEntry*> m_offsetToEntryMap;
 	QHash<Elf32_Off, Cpp::File> m_offsetToFileMap;
@@ -212,8 +236,8 @@ private:
 	QHash<Elf32_Off, Cpp::ArrayType> m_offsetToArrayTypeMap;
 	QHash<Elf32_Off, Cpp::FunctionType> m_offsetToFunctionTypeMap;
 	QHash<Elf32_Off, Cpp::Function> m_offsetToFunctionMap;
+	QHash<Elf32_Off, Cpp::Variable> m_offsetToVariableMap;
 	int m_indentLevel;
-	CppCodeModelSettings m_settings;
 
 	void clear();
 
@@ -221,12 +245,15 @@ private:
 	void parseClassType(DwarfEntry* entry, Cpp::File& file);
 	void parseMember(DwarfEntry* entry, Cpp::ClassType& c);
 	void parseInheritance(DwarfEntry* entry, Cpp::ClassType& c);
+	void parseTypedef(DwarfEntry* entry, Cpp::ClassType& c);
 	void parseEnumerationType(DwarfEntry* entry, Cpp::File& file);
 	void parseArrayType(DwarfEntry* entry, Cpp::File& file);
 	void parseSubroutineType(DwarfEntry* entry, Cpp::File& file);
 	void parseSubroutine(DwarfEntry* entry, Cpp::File& file);
 	void parseFormalParameter(DwarfEntry* entry, Cpp::FunctionType& f);
 	void parseLocalVariable(DwarfEntry* entry, Cpp::Function& f);
+	void parseVariable(DwarfEntry* entry, Cpp::File& f);
+	void parseTypedef(DwarfEntry* entry, Cpp::Typedef& t);
 	void parseType(DwarfType& dt, Cpp::Type& t);
 
 	void warnUnknownEntry(DwarfEntry* child, DwarfEntry* parent);
@@ -239,10 +266,13 @@ private:
 	void writeEnumElement(Code& code, Cpp::EnumElement& e, bool explicitValue);
 	void writeArrayType(Code& code, Cpp::ArrayType& a, bool isInline = false);
 	void writeFunctionType(Code& code, Cpp::FunctionType& f, bool isInline = false);
-	void writeFunctionDeclaration(Code& code, Cpp::Function& f);
+	void writeVariable(Code& code, Cpp::Variable& v);
+	void writeFunctionDeclaration(Code& code, Cpp::Function& f, bool isInsideClass = false);
 	void writeFunctionDefinition(Code& code, Cpp::Function& f);
-	void writeLocalVariable(Code& code, Cpp::LocalVariable& v);
+	void writeFunctionSignature(Code& code, Cpp::Function& f, bool isDeclaration, bool isInsideClass);
+	void writeFunctionVariable(Code& code, Cpp::FunctionVariable& v);
 	void writeDeclaration(Code& code, Cpp::Declaration& d);
+	void writeTypedef(Code& code, Cpp::Typedef& t);
 	void writeTypePrefix(Code& code, Cpp::Type& t);
 	void writeTypePostfix(Code& code, Cpp::Type& t);
 	void writeClassTypePrefix(Code& code, Cpp::ClassType& c);
@@ -253,8 +283,8 @@ private:
 	void writeArrayTypePostfix(Code& code, Cpp::ArrayType& a);
 	void writeFunctionTypePrefix(Code& code, Cpp::FunctionType& f);
 	void writeFunctionTypePostfix(Code& code, Cpp::FunctionType& f);
-	void writeFunctionParameters(Code& code, Cpp::FunctionType& f);
-	void writeFunctionParameter(Code& code, Cpp::FunctionParameter& p);
+	void writeFunctionParameters(Code& code, Cpp::FunctionType& f, bool isDeclaration);
+	void writeFunctionParameter(Code& code, Cpp::FunctionParameter& p, bool isDeclaration);
 	void writeFundamentalType(Code& code, Cpp::FundamentalType t);
 	void writeModifier(Code& code, Cpp::Modifier& m);
 	void writeConstVolatile(Code& code, bool isConst, bool isVolatile);

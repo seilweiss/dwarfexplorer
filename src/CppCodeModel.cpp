@@ -5,19 +5,29 @@
 
 #include <qdir.h>
 
+#define MAX_WARNINGS_ACTIVE
+#define MAX_WARNINGS 100
+
+#ifdef MAX_WARNINGS_ACTIVE
+static int s_warningCount = 0;
+#endif
+
 CppCodeModelSettings CppCodeModel::s_defaultSettings
 {
 	false, // printUnknownEntries
-	false, // printUnknownAttributes
+	true, // printUnknownAttributes
 	true, // writeTypes
+	true, // writeVariables
 	true, // writeFunctionDeclarations
 	true, // writeFunctionDefinitions
 	false, // writeDwarfEntryOffsets
 	true, // writeClassSizes
 	true, // writeClassMemberOffsets
+	true, // writeVariableAddresses
+	true, // writeFunctionMangledName
 	true, // writeFunctionAddresses
-	true, // writeFunctionSizes
-	false, // writeFunctionVariableLocations
+	false, // writeFunctionSizes
+	true, // writeFunctionVariableLocations
 	true, // sortTypesAlphabetically
 	true, // inlineMetrowerksUnnamedTypes
 	false, // hexadecimalEnumValues
@@ -72,6 +82,7 @@ CppCodeModel::CppCodeModel(QObject* parent)
 	, m_offsetToArrayTypeMap()
 	, m_offsetToFunctionTypeMap()
 	, m_offsetToFunctionMap()
+	, m_offsetToVariableMap()
 	, m_indentLevel(0)
 	, m_settings(s_defaultSettings)
 {
@@ -104,12 +115,17 @@ void CppCodeModel::clear()
 	m_offsetToArrayTypeMap.clear();
 	m_offsetToFunctionTypeMap.clear();
 	m_offsetToFunctionMap.clear();
+	m_offsetToVariableMap.clear();
 
 	endResetModel();
 }
 
 void CppCodeModel::parseDwarf(Dwarf* dwarf)
 {
+#ifdef MAX_WARNINGS_ACTIVE
+	s_warningCount = 0;
+#endif
+
 	clear();
 
 	if (!dwarf)
@@ -138,6 +154,17 @@ void CppCodeModel::parseDwarf(Dwarf* dwarf)
 			default:
 				warnUnknownEntry(entry, nullptr);
 				break;
+			}
+		}
+
+		for (Cpp::Function& f : m_offsetToFunctionMap)
+		{
+			if (f.isMember)
+			{
+				Q_ASSERT(m_offsetToClassTypeMap.contains(f.memberTypeOffset));
+
+				Cpp::ClassType& c = m_offsetToClassTypeMap[f.memberTypeOffset];
+				c.functionOffsets.append(f.entry->offset);
 			}
 		}
 	}
@@ -174,6 +201,10 @@ void CppCodeModel::parseCompileUnit(DwarfEntry* entry)
 		case DW_TAG_inlined_subroutine:
 			parseSubroutine(child, file);
 			break;
+		case DW_TAG_global_variable:
+		case DW_TAG_local_variable:
+			parseVariable(child, file);
+			break;
 		default:
 			warnUnknownEntry(child, entry);
 			break;
@@ -206,6 +237,9 @@ void CppCodeModel::parseClassType(DwarfEntry* entry, Cpp::File& file)
 			break;
 		case DW_TAG_inheritance:
 			parseInheritance(child, c);
+			break;
+		case DW_TAG_typedef:
+			parseTypedef(child, c);
 			break;
 		default:
 			warnUnknownEntry(child, entry);
@@ -357,6 +391,13 @@ void CppCodeModel::parseInheritance(DwarfEntry* entry, Cpp::ClassType& c)
 	}
 
 	c.inheritances.append(in);
+}
+
+void CppCodeModel::parseTypedef(DwarfEntry* entry, Cpp::ClassType& c)
+{
+	Cpp::Typedef t;
+	parseTypedef(entry, t);
+	c.typedefs.append(t);
 }
 
 void CppCodeModel::parseEnumerationType(DwarfEntry* entry, Cpp::File& file)
@@ -546,6 +587,9 @@ void CppCodeModel::parseSubroutine(DwarfEntry* entry, Cpp::File& file)
 	f.isInline = (entry->tag == DW_TAG_inlined_subroutine);
 	f.startAddress = 0;
 	f.endAddress = 0;
+	f.isMember = false;
+	f.memberTypeOffset = 0;
+	f.memberAccess = Cpp::Keyword::Public;
 
 	DwarfAttribute* typeAttribute = nullptr;
 
@@ -579,6 +623,32 @@ void CppCodeModel::parseSubroutine(DwarfEntry* entry, Cpp::File& file)
 		// Inline attribute
 		case DW_AT_inline:
 			f.isInline = true;
+			break;
+
+		// Member attribute
+		case DW_AT_member:
+			f.isMember = true;
+			f.memberTypeOffset = attr->ref;
+			break;
+
+		// Access attribute
+		case DW_AT_public:
+			f.memberAccess = Cpp::Keyword::Public;
+			break;
+		case DW_AT_private:
+			f.memberAccess = Cpp::Keyword::Private;
+			break;
+		case DW_AT_protected:
+			f.memberAccess = Cpp::Keyword::Protected;
+			break;
+
+		// Metrowerks mangled name attribute
+		case DW_AT_mangled:
+			f.mangledName = attr->string;
+			break;
+
+		// Ignored attributes
+		case DW_AT_source_info:
 			break;
 
 		// Unknown attribute
@@ -688,7 +758,7 @@ void CppCodeModel::parseFormalParameter(DwarfEntry* entry, Cpp::FunctionType& f)
 
 void CppCodeModel::parseLocalVariable(DwarfEntry* entry, Cpp::Function& f)
 {
-	Cpp::LocalVariable v;
+	Cpp::FunctionVariable v;
 
 	v.entry = entry;
 	v.type.isFundamental = true;
@@ -754,7 +824,125 @@ void CppCodeModel::parseLocalVariable(DwarfEntry* entry, Cpp::Function& f)
 		}
 	}
 
-	f.localVariables.append(v);
+	f.variables.append(v);
+}
+
+void CppCodeModel::parseVariable(DwarfEntry* entry, Cpp::File& f)
+{
+	Cpp::Variable& v = m_offsetToVariableMap[entry->offset];
+
+	v.entry = entry;
+	v.type.isFundamental = true;
+	v.type.fundType = Cpp::FundamentalType::Int;
+	v.type.isConst = false;
+	v.type.isVolatile = false;
+	v.isGlobal = (entry->tag == DW_TAG_global_variable);
+	v.address = 0;
+
+	DwarfAttribute* typeAttribute = nullptr;
+	DwarfAttribute* locationAttribute = nullptr;
+
+	for (int i = 0; i < entry->attributeCount; i++)
+	{
+		DwarfAttribute* attr = &entry->attributes[i];
+
+		switch (attr->name)
+		{
+		// Name attribute
+		case DW_AT_name:
+			v.name = attr->string;
+			break;
+
+		// Type attribute
+		case DW_AT_fund_type:
+		case DW_AT_user_def_type:
+		case DW_AT_mod_fund_type:
+		case DW_AT_mod_u_d_type:
+			typeAttribute = attr;
+			break;
+
+		// Location attribute
+		case DW_AT_location:
+			locationAttribute = attr;
+			break;
+
+		// Unknown attribute
+		default:
+			warnUnknownAttribute(attr, entry);
+			break;
+		}
+	}
+
+	if (typeAttribute)
+	{
+		DwarfType dt;
+		dt.read(dwarf(), typeAttribute);
+
+		parseType(dt, v.type);
+	}
+
+	if (locationAttribute)
+	{
+		DwarfLocation location;
+		location.read(dwarf(), locationAttribute);
+
+		for (const DwarfLocationAtom& atom : location.atoms)
+		{
+			switch (atom.op)
+			{
+			case DW_OP_ADDR:
+				v.address = atom.addr;
+				break;
+			}
+		}
+	}
+
+	f.variableOffsets.append(entry->offset);
+}
+
+void CppCodeModel::parseTypedef(DwarfEntry* entry, Cpp::Typedef& t)
+{
+	t.entry = entry;
+	t.type.isFundamental = true;
+	t.type.fundType = Cpp::FundamentalType::Int;
+	t.type.isConst = false;
+	t.type.isVolatile = false;
+
+	DwarfAttribute* typeAttribute = nullptr;
+
+	for (int i = 0; i < entry->attributeCount; i++)
+	{
+		DwarfAttribute* attr = &entry->attributes[i];
+
+		switch (attr->name)
+		{
+		// Name attribute
+		case DW_AT_name:
+			t.name = attr->string;
+			break;
+
+		// Type attribute
+		case DW_AT_fund_type:
+		case DW_AT_user_def_type:
+		case DW_AT_mod_fund_type:
+		case DW_AT_mod_u_d_type:
+			typeAttribute = attr;
+			break;
+
+		// Unknown attribute
+		default:
+			warnUnknownAttribute(attr, entry);
+			break;
+		}
+	}
+
+	if (typeAttribute)
+	{
+		DwarfType dt;
+		dt.read(dwarf(), typeAttribute);
+
+		parseType(dt, t.type);
+	}
 }
 
 void CppCodeModel::parseType(DwarfType& dt, Cpp::Type& t)
@@ -837,6 +1025,15 @@ void CppCodeModel::warnUnknownEntry(DwarfEntry* child, DwarfEntry* parent)
 		return;
 	}
 
+#ifdef MAX_WARNINGS_ACTIVE
+	if (s_warningCount >= MAX_WARNINGS)
+	{
+		return;
+	}
+
+	s_warningCount++;
+#endif
+
 	Output::write(tr("Unknown child entry %1 (%2) at offset %3 in parent entry %4 (%5)")
 		.arg(Dwarf::tagToString(child->tag))
 		.arg(child->getName())
@@ -858,6 +1055,15 @@ void CppCodeModel::warnUnknownAttribute(DwarfAttribute* attribute, DwarfEntry* e
 	case DW_AT_sibling:
 		return;
 	}
+
+#ifdef MAX_WARNINGS_ACTIVE
+	if (s_warningCount >= MAX_WARNINGS)
+	{
+		return;
+	}
+
+	s_warningCount++;
+#endif
 
 	Output::write(tr("Unknown attribute %1 at offset %2 in entry %3 (%4)")
 		.arg(Dwarf::attrNameToString(attribute->name))
@@ -882,22 +1088,30 @@ void CppCodeModel::writeDwarfEntry(Code& code, Elf32_Off offset)
 	case DW_TAG_class_type:
 	case DW_TAG_structure_type:
 		writeClassType(code, m_offsetToClassTypeMap[offset]);
-		writePunctuation(code, ";");
 		break;
 	case DW_TAG_enumeration_type:
 		writeEnumType(code, m_offsetToEnumTypeMap[offset]);
-		writePunctuation(code, ";");
 		break;
 	case DW_TAG_array_type:
 		writeArrayType(code, m_offsetToArrayTypeMap[offset]);
-		writePunctuation(code, ";");
 		break;
 	case DW_TAG_subroutine_type:
 		writeFunctionType(code, m_offsetToFunctionTypeMap[offset]);
-		writePunctuation(code, ";");
+		break;
+	case DW_TAG_global_variable:
+		writeVariable(code, m_offsetToVariableMap[offset]);
+		break;
+	case DW_TAG_local_variable:
+		// local variables can be in both compile units and subroutines
+		// only write local variables in compile units for now
+		if (m_offsetToVariableMap.contains(offset))
+		{
+			writeVariable(code, m_offsetToVariableMap[offset]);
+		}
 		break;
 	case DW_TAG_subroutine:
 	case DW_TAG_global_subroutine:
+	case DW_TAG_inlined_subroutine:
 		writeFunctionDefinition(code, m_offsetToFunctionMap[offset]);
 		break;
 	}
@@ -974,6 +1188,24 @@ void CppCodeModel::writeFiles(Code& code, const QList<Elf32_Off>& fileOffsets)
 		}
 	}
 
+	if (m_settings.writeVariables)
+	{
+		for (Elf32_Off fileOffset : fileOffsets)
+		{
+			Cpp::File& file = m_offsetToFileMap[fileOffset];
+
+			for (Elf32_Off variableOffset : file.variableOffsets)
+			{
+				Cpp::Variable& v = m_offsetToVariableMap[variableOffset];
+
+				writeVariable(code, v);
+				writeNewline(code);
+			}
+		}
+
+		writeNewline(code);
+	}
+
 	if (m_settings.writeFunctionDeclarations)
 	{
 		for (Elf32_Off fileOffset : fileOffsets)
@@ -985,7 +1217,6 @@ void CppCodeModel::writeFiles(Code& code, const QList<Elf32_Off>& fileOffsets)
 				Cpp::Function& f = m_offsetToFunctionMap[functionOffset];
 
 				writeFunctionDeclaration(code, f);
-				writePunctuation(code, ";");
 				writeNewline(code);
 			}
 		}
@@ -1079,6 +1310,24 @@ void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
 	writeNewline(code);
 	writePunctuation(code, "{");
 
+	bool empty = true;
+
+	if (!c.typedefs.empty())
+	{
+		increaseIndent();
+
+		for (Cpp::Typedef& t : c.typedefs)
+		{
+			writeNewline(code);
+			writeTypedef(code, t);
+		}
+
+		decreaseIndent();
+
+		writeNewline(code);
+		empty = false;
+	}
+
 	if (!c.members.empty())
 	{
 		Cpp::Keyword prevAccess;
@@ -1144,10 +1393,89 @@ void CppCodeModel::writeClassType(Code& code, Cpp::ClassType& c, bool isInline)
 		}
 
 		decreaseIndent();
+
+		writeNewline(code);
+		empty = false;
 	}
 
-	writeNewline(code);
-	writePunctuation(code, "}");
+	if (!c.functionOffsets.empty())
+	{
+		Cpp::Keyword prevAccess;
+
+		switch (c.keyword)
+		{
+		case Cpp::Keyword::Class:
+		{
+			prevAccess = (Cpp::Keyword)-1;
+			break;
+		}
+		case Cpp::Keyword::Struct:
+		{
+			prevAccess = Cpp::Keyword::Public;
+
+			for (int offset : c.functionOffsets)
+			{
+				if (m_offsetToFunctionMap[offset].memberAccess != Cpp::Keyword::Public)
+				{
+					prevAccess = (Cpp::Keyword)-1;
+					break;
+				}
+			}
+
+			break;
+		}
+		case Cpp::Keyword::Union:
+		{
+			prevAccess = Cpp::Keyword::Public;
+			break;
+		}
+		default:
+		{
+			prevAccess = (Cpp::Keyword)-1;
+			break;
+		}
+		}
+
+		increaseIndent();
+
+		bool first = true;
+
+		for (int offset : c.functionOffsets)
+		{
+			Cpp::Function& f = m_offsetToFunctionMap[offset];
+
+			if (f.memberAccess != prevAccess)
+			{
+				writeNewline(code, false);
+
+				if (!first)
+				{
+					writeNewline(code, false);
+				}
+
+				writeKeyword(code, f.memberAccess);
+				writePunctuation(code, ":");
+			}
+
+			writeNewline(code);
+			writeFunctionDeclaration(code, f, true);
+
+			prevAccess = f.memberAccess;
+			first = false;
+		}
+
+		decreaseIndent();
+
+		writeNewline(code);
+		empty = false;
+	}
+
+	if (empty)
+	{
+		writeNewline(code);
+	}
+	
+	writePunctuation(code, "};");
 }
 
 void CppCodeModel::writeClassMember(Code& code, Cpp::ClassMember& m)
@@ -1226,7 +1554,7 @@ void CppCodeModel::writeEnumType(Code& code, Cpp::EnumType& e, bool isInline)
 	}
 
 	writeNewline(code);
-	writePunctuation(code, "}");
+	writePunctuation(code, "};");
 }
 
 void CppCodeModel::writeEnumElement(Code& code, Cpp::EnumElement& e, bool explicitValue)
@@ -1275,6 +1603,7 @@ void CppCodeModel::writeArrayType(Code& code, Cpp::ArrayType& a, bool isInline)
 	}
 
 	writeArrayTypePostfix(code, a);
+	writePunctuation(code, ";");
 }
 
 void CppCodeModel::writeFunctionType(Code& code, Cpp::FunctionType& f, bool isInline)
@@ -1302,11 +1631,90 @@ void CppCodeModel::writeFunctionType(Code& code, Cpp::FunctionType& f, bool isIn
 	}
 
 	writeFunctionTypePostfix(code, f);
+	writePunctuation(code, ";");
 }
 
-void CppCodeModel::writeFunctionDeclaration(Code& code, Cpp::Function& f)
+void CppCodeModel::writeVariable(Code& code, Cpp::Variable& v)
 {
-	if (!f.isGlobal)
+	if (!v.isGlobal)
+	{
+		writeKeyword(code, Cpp::Keyword::Static);
+		writeSpace(code);
+	}
+
+	writeDeclaration(code, v);
+	writePunctuation(code, ";");
+
+	if (m_settings.writeVariableAddresses)
+	{
+		writeSpace(code);
+		writeComment(code, QString("Address: %1").arg(Util::hexToString(v.address)));
+	}
+}
+
+void CppCodeModel::writeFunctionDeclaration(Code& code, Cpp::Function& f, bool isInsideClass)
+{
+	writeFunctionSignature(code, f, true, isInsideClass);
+	writePunctuation(code, ";");
+}
+
+void CppCodeModel::writeFunctionDefinition(Code& code, Cpp::Function& f)
+{
+	if (m_settings.writeFunctionMangledName)
+	{
+		writeComment(code, f.mangledName);
+		writeNewline(code);
+	}
+
+	if (m_settings.writeFunctionAddresses)
+	{
+		writeComment(code, QString("Address: %1").arg(Util::hexToString(f.startAddress)));
+		writeNewline(code);
+	}
+
+	if (m_settings.writeFunctionSizes)
+	{
+		writeComment(code, QString("Size: %1").arg(Util::hexToString(f.endAddress - f.startAddress)));
+		writeNewline(code);
+	}
+
+	writeFunctionSignature(code, f, false, false);
+	writeNewline(code);
+	writePunctuation(code, "{");
+
+	increaseIndent();
+
+	for (Cpp::FunctionVariable& v : f.variables)
+	{
+		writeNewline(code);
+		writeFunctionVariable(code, v);
+	}
+
+	decreaseIndent();
+
+	writeNewline(code);
+	writePunctuation(code, "}");
+}
+
+void CppCodeModel::writeFunctionSignature(Code& code, Cpp::Function& f, bool isDeclaration, bool isInsideClass)
+{
+	bool isNonStaticMemberFunction = false;
+	bool isConstMemberFunction = false;
+
+	if (f.isMember
+		&& !f.parameters.empty()
+		&& f.parameters[0].name == "this")
+	{
+		isNonStaticMemberFunction = true;
+
+		if (f.parameters[0].type.isConst)
+		{
+			isConstMemberFunction = true;
+		}
+	}
+
+	if ((!f.isMember && !f.isGlobal)
+		|| (f.isMember && !isNonStaticMemberFunction && isInsideClass))
 	{
 		writeKeyword(code, Cpp::Keyword::Static);
 		writeSpace(code);
@@ -1320,55 +1728,29 @@ void CppCodeModel::writeFunctionDeclaration(Code& code, Cpp::Function& f)
 
 	writeTypePrefix(code, f.type);
 	writeTypePostfix(code, f.type);
+	writeSpace(code);
 
-	if (!f.name.isEmpty())
+	if (f.isMember && !isInsideClass)
+	{
+		Q_ASSERT(m_offsetToClassTypeMap.contains(f.memberTypeOffset));
+
+		Cpp::ClassType& c = m_offsetToClassTypeMap[f.memberTypeOffset];
+
+		writeIdentifier(code, c.name);
+		writePunctuation(code, "::");
+	}
+
+	writeIdentifier(code, f.name);
+	writeFunctionParameters(code, f, isDeclaration);
+
+	if (isConstMemberFunction)
 	{
 		writeSpace(code);
-		writeIdentifier(code, f.name);
+		writeKeyword(code, Cpp::Keyword::Const);
 	}
-
-	writeFunctionParameters(code, f);
 }
 
-void CppCodeModel::writeFunctionDefinition(Code& code, Cpp::Function& f)
-{
-	QStringList comment;
-
-	if (m_settings.writeFunctionAddresses)
-	{
-		comment += QString("Address: %1").arg(Util::hexToString(f.startAddress));
-	}
-
-	if (m_settings.writeFunctionSizes)
-	{
-		comment += QString("Size: %1").arg(Util::hexToString(f.endAddress - f.startAddress));
-	}
-
-	if (!comment.isEmpty())
-	{
-		writeComment(code, comment.join(", "));
-		writeNewline(code);
-	}
-
-	writeFunctionDeclaration(code, f);
-	writeNewline(code);
-	writePunctuation(code, "{");
-
-	increaseIndent();
-
-	for (Cpp::LocalVariable& v : f.localVariables)
-	{
-		writeNewline(code);
-		writeLocalVariable(code, v);
-	}
-
-	decreaseIndent();
-
-	writeNewline(code);
-	writePunctuation(code, "}");
-}
-
-void CppCodeModel::writeLocalVariable(Code& code, Cpp::LocalVariable& v)
+void CppCodeModel::writeFunctionVariable(Code& code, Cpp::FunctionVariable& v)
 {
 	writeDeclaration(code, v);
 	writePunctuation(code, ";");
@@ -1376,7 +1758,7 @@ void CppCodeModel::writeLocalVariable(Code& code, Cpp::LocalVariable& v)
 	if (m_settings.writeFunctionVariableLocations)
 	{
 		writeSpace(code);
-		writeMultilineComment(code, v.location);
+		writeComment(code, v.location);
 	}
 }
 
@@ -1391,6 +1773,22 @@ void CppCodeModel::writeDeclaration(Code& code, Cpp::Declaration& d)
 	}
 
 	writeTypePostfix(code, d.type);
+}
+
+void CppCodeModel::writeTypedef(Code& code, Cpp::Typedef& t)
+{
+	writeKeyword(code, Cpp::Keyword::Typedef);
+	writeSpace(code);
+	writeTypePrefix(code, t.type);
+
+	if (!t.name.isEmpty())
+	{
+		writeSpace(code);
+		writeIdentifier(code, t.name);
+	}
+	
+	writeTypePostfix(code, t.type);
+	writePunctuation(code, ";");
 }
 
 void CppCodeModel::writeTypePrefix(Code& code, Cpp::Type& t)
@@ -1525,17 +1923,22 @@ void CppCodeModel::writeFunctionTypePrefix(Code& code, Cpp::FunctionType& f)
 void CppCodeModel::writeFunctionTypePostfix(Code& code, Cpp::FunctionType& f)
 {
 	writePunctuation(code, ")");
-	writeFunctionParameters(code, f);
+	writeFunctionParameters(code, f, true);
 	writeTypePostfix(code, f.type);
 }
 
-void CppCodeModel::writeFunctionParameters(Code& code, Cpp::FunctionType& f)
+void CppCodeModel::writeFunctionParameters(Code& code, Cpp::FunctionType& f, bool isDeclaration)
 {
 	writePunctuation(code, "(");
 
 	for (int i = 0; i < f.parameters.size(); i++)
 	{
-		writeFunctionParameter(code, f.parameters[i]);
+		if (f.parameters[i].name == "this")
+		{
+			continue;
+		}
+
+		writeFunctionParameter(code, f.parameters[i], isDeclaration);
 
 		if (i < f.parameters.size() - 1)
 		{
@@ -1547,11 +1950,13 @@ void CppCodeModel::writeFunctionParameters(Code& code, Cpp::FunctionType& f)
 	writePunctuation(code, ")");
 }
 
-void CppCodeModel::writeFunctionParameter(Code& code, Cpp::FunctionParameter& p)
+void CppCodeModel::writeFunctionParameter(Code& code, Cpp::FunctionParameter& p, bool isDeclaration)
 {
 	writeDeclaration(code, p);
 
-	if (m_settings.writeFunctionVariableLocations)
+	if (!isDeclaration
+		&& m_settings.writeFunctionVariableLocations
+		&& !p.location.isEmpty())
 	{
 		writeSpace(code);
 		writeMultilineComment(code, p.location);
