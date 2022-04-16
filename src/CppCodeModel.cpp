@@ -1501,7 +1501,12 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
 		writeNewline(code);
 	}
 	
-	code += "};";
+	code += "}";
+
+	if (!isInline)
+	{
+		code += ";";
+	}
 }
 
 void CppCodeModel::writeClassMember(QString& code, Cpp::ClassMember& m)
@@ -1598,7 +1603,12 @@ void CppCodeModel::writeEnumType(QString& code, Cpp::EnumType& e, bool isInline)
 	}
 
 	writeNewline(code);
-	code += "};";
+	code += "}";
+
+	if (!isInline)
+	{
+		code += ";";
+	}
 }
 
 void CppCodeModel::writeEnumElement(QString& code, Cpp::EnumElement& e, bool explicitValue)
@@ -1645,7 +1655,11 @@ void CppCodeModel::writeArrayType(QString& code, Cpp::ArrayType& a, bool isInlin
 	}
 
 	writeArrayTypePostfix(code, a);
-	code += ";";
+
+	if (!isInline)
+	{
+		code += ";";
+	}
 }
 
 void CppCodeModel::writeFunctionType(QString& code, Cpp::FunctionType& f, bool isInline)
@@ -1673,7 +1687,11 @@ void CppCodeModel::writeFunctionType(QString& code, Cpp::FunctionType& f, bool i
 	}
 
 	writeFunctionTypePostfix(code, f);
-	code += ";";
+
+	if (!isInline)
+	{
+		code += ";";
+	}
 }
 
 void CppCodeModel::writeVariable(QString& code, Cpp::Variable& v)
