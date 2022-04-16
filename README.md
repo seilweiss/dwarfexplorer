@@ -7,4 +7,7 @@
 4. Go to `Extensions > Qt VS Tools > Open Qt Project File (.pro)...`
 5. Select `qscintilla/src/qscintilla.pro`
 6. Right-click the `qscintilla` project and select `Reload Project`
-7. Build
+7. Go to `Extensions > Qt VS Tools > Open Qt Project File (.pro)...`
+8. Select `QtAwesome/QtAwesome/QtAwesome.pro`
+9. Right-click the `QtAwesome` project and select `Reload Project`
+10. Build
