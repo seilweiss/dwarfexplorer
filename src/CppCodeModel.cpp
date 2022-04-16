@@ -14,8 +14,8 @@ static int s_warningCount = 0;
 
 CppCodeModelSettings CppCodeModel::s_defaultSettings
 {
-	false, // printUnknownEntries
-	true, // printUnknownAttributes
+	true, // printUnknownEntries
+	false, // printUnknownAttributes
 	true, // writeTypes
 	true, // writeVariables
 	true, // writeFunctionDeclarations
@@ -188,6 +188,7 @@ void CppCodeModel::parseCompileUnit(DwarfEntry* entry)
 		{
 		case DW_TAG_class_type:
 		case DW_TAG_structure_type:
+		case DW_TAG_union_type:
 			parseClassType(child, file);
 			break;
 		case DW_TAG_enumeration_type:
@@ -222,7 +223,22 @@ void CppCodeModel::parseClassType(DwarfEntry* entry, Cpp::File& file)
 	Cpp::ClassType& c = m_offsetToClassTypeMap[entry->offset];
 
 	c.entry = entry;
-	c.keyword = (entry->tag == DW_TAG_class_type) ? Cpp::Keyword::Class : Cpp::Keyword::Struct;
+	
+
+	switch (entry->tag)
+	{
+	case DW_TAG_class_type:
+		c.keyword = Cpp::Keyword::Class;
+		break;
+	case DW_TAG_structure_type:
+		c.keyword = Cpp::Keyword::Struct;
+		break;
+	case DW_TAG_union_type:
+		Output::write(Util::hexToString(entry->offset));
+		c.keyword = Cpp::Keyword::Union;
+		break;
+	}
+
 	c.name = entry->getName();
 	c.size = 0;
 
@@ -1117,6 +1133,7 @@ void CppCodeModel::writeDwarfEntry(QString& code, Elf32_Off offset)
 		break;
 	case DW_TAG_class_type:
 	case DW_TAG_structure_type:
+	case DW_TAG_union_type:
 		writeClassType(code, m_offsetToClassTypeMap[offset]);
 		break;
 	case DW_TAG_enumeration_type:
@@ -1313,6 +1330,10 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
 				explicitAccess = true;
 			}
 			else if (c.keyword == Cpp::Keyword::Struct && in.access != Cpp::Keyword::Public)
+			{
+				explicitAccess = true;
+			}
+			else if (c.keyword == Cpp::Keyword::Union && in.access != Cpp::Keyword::Public)
 			{
 				explicitAccess = true;
 			}
@@ -1885,6 +1906,7 @@ void CppCodeModel::writeTypePrefix(QString& code, Cpp::Type& t)
 			{
 			case DW_TAG_class_type:
 			case DW_TAG_structure_type:
+			case DW_TAG_union_type:
 				writeClassTypePrefix(code, m_offsetToClassTypeMap[userTypeEntry->offset]);
 				break;
 			case DW_TAG_enumeration_type:
@@ -1933,6 +1955,7 @@ void CppCodeModel::writeTypePostfix(QString& code, Cpp::Type& t)
 		{
 		case DW_TAG_class_type:
 		case DW_TAG_structure_type:
+		case DW_TAG_union_type:
 			writeClassTypePostfix(code, m_offsetToClassTypeMap[userTypeEntry->offset]);
 			break;
 		case DW_TAG_enumeration_type:
