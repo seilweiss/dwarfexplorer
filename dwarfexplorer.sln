@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dwarfexplorer", "dwarfexplorer.vcxproj", "{3F8F0AAA-970E-33B2-A77F-5938F9326E41}"
+	ProjectSection(ProjectDependencies) = postProject
+		{370F4981-A131-3267-9108-188CE909744B} = {370F4981-A131-3267-9108-188CE909744B}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qscintilla", "qscintilla\src\qscintilla.vcxproj", "{370F4981-A131-3267-9108-188CE909744B}"
 EndProject
