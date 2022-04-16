@@ -18,6 +18,7 @@ public:
 
 	virtual void writeDwarfEntry(QString& code, Elf32_Off offset) = 0;
 	virtual void writeFile(QString& code, const QString& path) = 0;
+	virtual QString dwarfEntryName(Elf32_Off offset) const = 0;
 
 signals:
 	void modelAboutToBeReset();

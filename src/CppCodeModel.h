@@ -226,6 +226,7 @@ public:
 
 	void writeDwarfEntry(QString& code, Elf32_Off offset) override;
 	void writeFile(QString& code, const QString& path) override;
+	QString dwarfEntryName(Elf32_Off offset) const override;
 
 protected:
 	void parseDwarf(Dwarf* dwarf) override;

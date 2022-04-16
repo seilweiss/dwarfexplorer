@@ -78,6 +78,9 @@
     <ClCompile Include="src\Util.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Icons.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Dwarf.h">
@@ -99,6 +102,9 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Util.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Icons.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>

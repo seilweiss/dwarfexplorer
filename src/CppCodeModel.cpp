@@ -223,7 +223,6 @@ void CppCodeModel::parseClassType(DwarfEntry* entry, Cpp::File& file)
 	Cpp::ClassType& c = m_offsetToClassTypeMap[entry->offset];
 
 	c.entry = entry;
-	
 
 	switch (entry->tag)
 	{
@@ -2161,4 +2160,11 @@ bool CppCodeModel::typeCanBeInlined(const QString& name) const
 	}
 
 	return false;
+}
+
+QString CppCodeModel::dwarfEntryName(Elf32_Off offset) const
+{
+	Q_ASSERT(m_offsetToEntryMap.contains(offset));
+
+	return m_offsetToEntryMap[offset]->getName();
 }

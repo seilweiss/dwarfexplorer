@@ -6,6 +6,9 @@
 
 #include <Qsci/qsciscintilla.h>
 
+#include <qlineedit.h>
+#include <qpushbutton.h>
+
 class CodeView : public QWidget
 {
 	Q_OBJECT
@@ -25,6 +28,12 @@ private:
 	AbstractCodeModel* m_model;
 	QsciScintilla* m_editor;
 	QString m_code;
+	QLineEdit* m_pathLineEdit;
+	QPushButton* m_saveButton;
+	QPushButton* m_settingsButton;
 
 	void refresh();
+
+private slots:
+	void onSaveButtonClicked();
 };
