@@ -274,6 +274,9 @@ private:
     int m_indentLevel;
     bool m_firstSourceStatementTableParsed;
 
+    void loadSettings();
+    void saveSettings();
+
     void clear();
 
     void parseCompileUnit(DwarfEntry* entry);

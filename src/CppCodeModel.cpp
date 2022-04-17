@@ -4,6 +4,7 @@
 #include "Util.h"
 
 #include <qdir.h>
+#include <qsettings.h>
 
 //#define MAX_WARNINGS_ACTIVE
 #define MAX_WARNINGS 100
@@ -83,7 +84,7 @@ QHash<Cpp::Keyword, QString> CppCodeModel::s_keywordToStringMap =
 
 CppCodeModel::CppCodeModel(QObject* parent)
     : AbstractCodeModel(parent)
-    , m_settings(s_defaultSettings)
+    , m_settings()
     , m_pathToOffsetMultiMap()
     , m_offsetToEntryMap()
     , m_offsetToSourceStatementTableMap()
@@ -98,6 +99,8 @@ CppCodeModel::CppCodeModel(QObject* parent)
     , m_indentLevel(0)
     , m_firstSourceStatementTableParsed(false)
 {
+    loadSettings();
+    saveSettings();
 }
 
 CppCodeModelSettings& CppCodeModel::defaultSettings()
@@ -113,6 +116,106 @@ CppCodeModelSettings& CppCodeModel::settings()
 const CppCodeModelSettings& CppCodeModel::settings() const
 {
     return m_settings;
+}
+
+void CppCodeModel::loadSettings()
+{
+    QSettings settings;
+    m_settings.warnUnknownEntries = settings.value("cppcodemodel/warnUnknownEntries", s_defaultSettings.warnUnknownEntries).toBool();
+    m_settings.warnUnknownAttributes = settings.value("cppcodemodel/warnUnknownAttributes", s_defaultSettings.warnUnknownAttributes).toBool();
+    m_settings.warnUnknownLineNumberFunctions = settings.value("cppcodemodel/warnUnknownLineNumberFunctions", s_defaultSettings.warnUnknownLineNumberFunctions).toBool();
+    m_settings.writeClassTypes = settings.value("cppcodemodel/writeClassTypes", s_defaultSettings.writeClassTypes).toBool();
+    m_settings.writeEnumTypes = settings.value("cppcodemodel/writeEnumTypes", s_defaultSettings.writeEnumTypes).toBool();
+    m_settings.writeArrayTypes = settings.value("cppcodemodel/writeArrayTypes", s_defaultSettings.writeArrayTypes).toBool();
+    m_settings.writeFunctionTypes = settings.value("cppcodemodel/writeFunctionTypes", s_defaultSettings.writeFunctionTypes).toBool();
+    m_settings.writePointerToMemberTypes = settings.value("cppcodemodel/writePointerToMemberTypes", s_defaultSettings.writePointerToMemberTypes).toBool();
+    m_settings.writeVariables = settings.value("cppcodemodel/writeVariables", s_defaultSettings.writeVariables).toBool();
+    m_settings.writeFunctionDeclarations = settings.value("cppcodemodel/writeFunctionDeclarations", s_defaultSettings.writeFunctionDeclarations).toBool();
+    m_settings.writeFunctionDefinitions = settings.value("cppcodemodel/writeFunctionDefinitions", s_defaultSettings.writeFunctionDefinitions).toBool();
+    m_settings.writeDwarfEntryOffsets = settings.value("cppcodemodel/writeDwarfEntryOffsets", s_defaultSettings.writeDwarfEntryOffsets).toBool();
+    m_settings.writeClassSizes = settings.value("cppcodemodel/writeClassSizes", s_defaultSettings.writeClassSizes).toBool();
+    m_settings.writeClassMemberOffsets = settings.value("cppcodemodel/writeClassMemberOffsets", s_defaultSettings.writeClassMemberOffsets).toBool();
+    m_settings.writeClassMemberBitOffsets = settings.value("cppcodemodel/writeClassMemberBitOffsets", s_defaultSettings.writeClassMemberBitOffsets).toBool();
+    m_settings.writeClassMemberBitSizes = settings.value("cppcodemodel/writeClassMemberBitSizes", s_defaultSettings.writeClassMemberBitSizes).toBool();
+    m_settings.writeVariableAddresses = settings.value("cppcodemodel/writeVariableAddresses", s_defaultSettings.writeVariableAddresses).toBool();
+    m_settings.writeVariableMangledNames = settings.value("cppcodemodel/writeVariableMangledNames", s_defaultSettings.writeVariableMangledNames).toBool();
+    m_settings.writeFunctionMangledNames = settings.value("cppcodemodel/writeFunctionMangledNames", s_defaultSettings.writeFunctionMangledNames).toBool();
+    m_settings.writeFunctionAddresses = settings.value("cppcodemodel/writeFunctionAddresses", s_defaultSettings.writeFunctionAddresses).toBool();
+    m_settings.writeFunctionSizes = settings.value("cppcodemodel/writeFunctionSizes", s_defaultSettings.writeFunctionSizes).toBool();
+    m_settings.writeFunctionVariableLocations = settings.value("cppcodemodel/writeFunctionVariableLocations", s_defaultSettings.writeFunctionVariableLocations).toBool();
+    m_settings.writeFunctionLineNumbers = settings.value("cppcodemodel/writeFunctionLineNumbers", s_defaultSettings.writeFunctionLineNumbers).toBool();
+    m_settings.sortTypesAlphabetically = settings.value("cppcodemodel/sortTypesAlphabetically", s_defaultSettings.sortTypesAlphabetically).toBool();
+    m_settings.inlineMetrowerksAnonymousTypes = settings.value("cppcodemodel/inlineMetrowerksAnonymousTypes", s_defaultSettings.inlineMetrowerksAnonymousTypes).toBool();
+    m_settings.hexadecimalEnumValues = settings.value("cppcodemodel/hexadecimalEnumValues", s_defaultSettings.hexadecimalEnumValues).toBool();
+    m_settings.forceExplicitEnumValues = settings.value("cppcodemodel/forceExplicitEnumValues", s_defaultSettings.forceExplicitEnumValues).toBool();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::Char] = settings.value("cppcodemodel/fundamentalTypeNames/Char", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::Char]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::SignedChar] = settings.value("cppcodemodel/fundamentalTypeNames/SignedChar", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::SignedChar]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedChar] = settings.value("cppcodemodel/fundamentalTypeNames/UnsignedChar", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedChar]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::Short] = settings.value("cppcodemodel/fundamentalTypeNames/Short", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::Short]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::SignedShort] = settings.value("cppcodemodel/fundamentalTypeNames/SignedShort", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::SignedShort]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedShort] = settings.value("cppcodemodel/fundamentalTypeNames/UnsignedShort", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedShort]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::Int] = settings.value("cppcodemodel/fundamentalTypeNames/Int", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::Int]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::SignedInt] = settings.value("cppcodemodel/fundamentalTypeNames/SignedInt", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::SignedInt]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedInt] = settings.value("cppcodemodel/fundamentalTypeNames/UnsignedInt", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedInt]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::Long] = settings.value("cppcodemodel/fundamentalTypeNames/Long", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::Long]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::SignedLong] = settings.value("cppcodemodel/fundamentalTypeNames/SignedLong", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::SignedLong]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedLong] = settings.value("cppcodemodel/fundamentalTypeNames/UnsignedLong", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedLong]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::VoidPointer] = settings.value("cppcodemodel/fundamentalTypeNames/VoidPointer", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::VoidPointer]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::Float] = settings.value("cppcodemodel/fundamentalTypeNames/Float", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::Float]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::Double] = settings.value("cppcodemodel/fundamentalTypeNames/Double", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::Double]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::Void] = settings.value("cppcodemodel/fundamentalTypeNames/Void", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::Void]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::Bool] = settings.value("cppcodemodel/fundamentalTypeNames/Bool", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::Bool]).toString();
+    m_settings.fundamentalTypeNames[Cpp::FundamentalType::LongLong] = settings.value("cppcodemodel/fundamentalTypeNames/LongLong", s_defaultSettings.fundamentalTypeNames[Cpp::FundamentalType::LongLong]).toString();
+}
+
+void CppCodeModel::saveSettings()
+{
+    QSettings settings;
+    settings.setValue("cppcodemodel/warnUnknownEntries", m_settings.warnUnknownEntries);
+    settings.setValue("cppcodemodel/warnUnknownAttributes", m_settings.warnUnknownAttributes);
+    settings.setValue("cppcodemodel/warnUnknownLineNumberFunctions", m_settings.warnUnknownLineNumberFunctions);
+    settings.setValue("cppcodemodel/writeClassTypes", m_settings.writeClassTypes);
+    settings.setValue("cppcodemodel/writeEnumTypes", m_settings.writeEnumTypes);
+    settings.setValue("cppcodemodel/writeArrayTypes", m_settings.writeArrayTypes);
+    settings.setValue("cppcodemodel/writeFunctionTypes", m_settings.writeFunctionTypes);
+    settings.setValue("cppcodemodel/writePointerToMemberTypes", m_settings.writePointerToMemberTypes);
+    settings.setValue("cppcodemodel/writeVariables", m_settings.writeVariables);
+    settings.setValue("cppcodemodel/writeFunctionDeclarations", m_settings.writeFunctionDeclarations);
+    settings.setValue("cppcodemodel/writeFunctionDefinitions", m_settings.writeFunctionDefinitions);
+    settings.setValue("cppcodemodel/writeDwarfEntryOffsets", m_settings.writeDwarfEntryOffsets);
+    settings.setValue("cppcodemodel/writeClassSizes", m_settings.writeClassSizes);
+    settings.setValue("cppcodemodel/writeClassMemberOffsets", m_settings.writeClassMemberOffsets);
+    settings.setValue("cppcodemodel/writeClassMemberBitOffsets", m_settings.writeClassMemberBitOffsets);
+    settings.setValue("cppcodemodel/writeClassMemberBitSizes", m_settings.writeClassMemberBitSizes);
+    settings.setValue("cppcodemodel/writeVariableAddresses", m_settings.writeVariableAddresses);
+    settings.setValue("cppcodemodel/writeVariableMangledNames", m_settings.writeVariableMangledNames);
+    settings.setValue("cppcodemodel/writeFunctionMangledNames", m_settings.writeFunctionMangledNames);
+    settings.setValue("cppcodemodel/writeFunctionAddresses", m_settings.writeFunctionAddresses);
+    settings.setValue("cppcodemodel/writeFunctionSizes", m_settings.writeFunctionSizes);
+    settings.setValue("cppcodemodel/writeFunctionVariableLocations", m_settings.writeFunctionVariableLocations);
+    settings.setValue("cppcodemodel/writeFunctionLineNumbers", m_settings.writeFunctionLineNumbers);
+    settings.setValue("cppcodemodel/sortTypesAlphabetically", m_settings.sortTypesAlphabetically);
+    settings.setValue("cppcodemodel/inlineMetrowerksAnonymousTypes", m_settings.inlineMetrowerksAnonymousTypes);
+    settings.setValue("cppcodemodel/hexadecimalEnumValues", m_settings.hexadecimalEnumValues);
+    settings.setValue("cppcodemodel/forceExplicitEnumValues", m_settings.forceExplicitEnumValues);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/Char", m_settings.fundamentalTypeNames[Cpp::FundamentalType::Char]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/SignedChar", m_settings.fundamentalTypeNames[Cpp::FundamentalType::SignedChar]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/UnsignedChar", m_settings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedChar]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/Short", m_settings.fundamentalTypeNames[Cpp::FundamentalType::Short]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/SignedShort", m_settings.fundamentalTypeNames[Cpp::FundamentalType::SignedShort]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/UnsignedShort", m_settings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedShort]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/Int", m_settings.fundamentalTypeNames[Cpp::FundamentalType::Int]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/SignedInt", m_settings.fundamentalTypeNames[Cpp::FundamentalType::SignedInt]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/UnsignedInt", m_settings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedInt]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/Long", m_settings.fundamentalTypeNames[Cpp::FundamentalType::Long]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/SignedLong", m_settings.fundamentalTypeNames[Cpp::FundamentalType::SignedLong]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/UnsignedLong", m_settings.fundamentalTypeNames[Cpp::FundamentalType::UnsignedLong]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/VoidPointer", m_settings.fundamentalTypeNames[Cpp::FundamentalType::VoidPointer]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/Float", m_settings.fundamentalTypeNames[Cpp::FundamentalType::Float]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/Double", m_settings.fundamentalTypeNames[Cpp::FundamentalType::Double]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/Void", m_settings.fundamentalTypeNames[Cpp::FundamentalType::Void]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/Bool", m_settings.fundamentalTypeNames[Cpp::FundamentalType::Bool]);
+    settings.setValue("cppcodemodel/fundamentalTypeNames/LongLong", m_settings.fundamentalTypeNames[Cpp::FundamentalType::LongLong]);
 }
 
 void CppCodeModel::clear()
@@ -2547,6 +2650,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeClassTypes = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2556,6 +2660,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeEnumTypes = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2565,6 +2670,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeArrayTypes = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2574,6 +2680,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeFunctionTypes = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2583,6 +2690,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writePointerToMemberTypes = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2592,6 +2700,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeVariables = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2601,6 +2710,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeFunctionDeclarations = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2610,6 +2720,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeFunctionDefinitions = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2619,6 +2730,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.sortTypesAlphabetically = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2628,6 +2740,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.inlineMetrowerksAnonymousTypes = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2637,6 +2750,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.hexadecimalEnumValues = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2646,6 +2760,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.forceExplicitEnumValues = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2657,6 +2772,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeDwarfEntryOffsets = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2666,6 +2782,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeClassSizes = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2675,6 +2792,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeClassMemberOffsets = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2684,6 +2802,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeClassMemberBitOffsets = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2693,6 +2812,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeClassMemberBitSizes = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2702,6 +2822,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeVariableAddresses = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2711,6 +2832,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeVariableMangledNames = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2720,6 +2842,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeFunctionMangledNames = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2729,6 +2852,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeFunctionAddresses = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2738,6 +2862,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeFunctionSizes = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2747,6 +2872,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeFunctionVariableLocations = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2756,6 +2882,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeFunctionLineNumbers = action->isChecked();
+            saveSettings();
             requestRewrite();
         });
 
@@ -2767,6 +2894,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.warnUnknownEntries = action->isChecked();
+            saveSettings();
         });
 
     action = warningsMenu->addAction(tr("Unknown DWARF attributes"));
@@ -2775,6 +2903,7 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.warnUnknownAttributes = action->isChecked();
+            saveSettings();
         });
 
     action = warningsMenu->addAction(tr("Unknown line number functions"));
@@ -2783,5 +2912,6 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.warnUnknownLineNumberFunctions = action->isChecked();
+            saveSettings();
         });
 }

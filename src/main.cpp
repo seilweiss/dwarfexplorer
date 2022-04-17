@@ -6,6 +6,7 @@
 
 int main(int argc, char* argv[])
 {
+    QCoreApplication::setOrganizationName("seilweiss");
     QCoreApplication::setApplicationName("DWARF Explorer");
 
     QApplication a(argc, argv);
