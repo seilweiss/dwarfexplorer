@@ -272,6 +272,7 @@ private:
     QHash<Elf32_Off, Cpp::Function> m_offsetToFunctionMap;
     QHash<Elf32_Off, Cpp::Variable> m_offsetToVariableMap;
     int m_indentLevel;
+    bool m_firstSourceStatementTableParsed;
 
     void clear();
 

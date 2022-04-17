@@ -83,6 +83,7 @@ QHash<Cpp::Keyword, QString> CppCodeModel::s_keywordToStringMap =
 
 CppCodeModel::CppCodeModel(QObject* parent)
     : AbstractCodeModel(parent)
+    , m_settings(s_defaultSettings)
     , m_pathToOffsetMultiMap()
     , m_offsetToEntryMap()
     , m_offsetToSourceStatementTableMap()
@@ -95,7 +96,7 @@ CppCodeModel::CppCodeModel(QObject* parent)
     , m_offsetToFunctionMap()
     , m_offsetToVariableMap()
     , m_indentLevel(0)
-    , m_settings(s_defaultSettings)
+    , m_firstSourceStatementTableParsed(false)
 {
 }
 
@@ -153,6 +154,8 @@ void CppCodeModel::parseDwarf(Dwarf* dwarf)
             m_offsetToSourceStatementTableMap[table->offset] = table;
         }
     }
+
+    m_firstSourceStatementTableParsed = false;
 
     if (dwarf->entryCount > 0)
     {
@@ -233,7 +236,7 @@ void CppCodeModel::parseCompileUnit(DwarfEntry* entry)
         }
     }
 
-    DwarfAttribute* typeAttribute = nullptr;
+    DwarfAttribute* statementListAttribute = nullptr;
 
     for (int i = 0; i < entry->attributeCount; i++)
     {
@@ -248,8 +251,7 @@ void CppCodeModel::parseCompileUnit(DwarfEntry* entry)
 
             // Statement list attribute
         case DW_AT_stmt_list:
-            Q_ASSERT(m_offsetToSourceStatementTableMap.contains(attr->data4));
-            parseSourceStatementTable(m_offsetToSourceStatementTableMap[attr->data4], file);
+            statementListAttribute = attr;
             break;
 
             // Ignored attributes
@@ -263,6 +265,37 @@ void CppCodeModel::parseCompileUnit(DwarfEntry* entry)
         default:
             warnUnknownAttribute(attr, entry);
             break;
+        }
+    }
+
+    if (statementListAttribute)
+    {
+        // Hack to prevent unknown line number function warnings.
+        // Some compile units have an AT_stmt_list offset of 0 if they don't have any line numbers,
+        // despite 0 being a valid offset (it's the offset of the first table in the .line section).
+        // This causes a bunch of warnings because the Cpp::File will contain all of the line numbers
+        // from the first table when it really shouldn't contain any.
+        // To get around this, we only parse the table at offset 0 once, under the assumption
+        // that it corresponds to the correct compile unit (though this might not always be true...)
+        bool canParse = true;
+        
+        if (statementListAttribute->data4 == 0)
+        {
+            if (m_firstSourceStatementTableParsed)
+            {
+                canParse = false;
+            }
+            else
+            {
+                m_firstSourceStatementTableParsed = true;
+            }
+        }
+
+        if (canParse)
+        {
+            Q_ASSERT(m_offsetToSourceStatementTableMap.contains(statementListAttribute->data4));
+
+            parseSourceStatementTable(m_offsetToSourceStatementTableMap[statementListAttribute->data4], file);
         }
     }
 
@@ -1182,6 +1215,12 @@ void CppCodeModel::parseSourceStatementTable(DwarfSourceStatementTable* table, C
     for (int i = 0; i < table->entryCount; i++)
     {
         DwarfSourceStatementEntry* entry = &table->entries[i];
+
+        if (i == table->entryCount - 1 && entry->lineNumber == 0)
+        {
+            continue;
+        }
+
         Cpp::Function* f = nullptr;
 
         for (Elf32_Off offset : file.functionOffsets)
@@ -2024,8 +2063,10 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
         writeFunctionVariable(code, v);
     }
 
-    if (m_settings.writeFunctionLineNumbers)
+    if (!f.lineNumbers.isEmpty() && m_settings.writeFunctionLineNumbers)
     {
+        writeNewline(code);
+
         for (Cpp::FunctionLineNumber& l : f.lineNumbers)
         {
             QStringList comment;
