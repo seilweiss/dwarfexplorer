@@ -6,6 +6,8 @@
 
 int main(int argc, char* argv[])
 {
+    QCoreApplication::setApplicationName("DWARF Explorer");
+
     QApplication a(argc, argv);
 
     Icons::init();
