@@ -198,7 +198,11 @@ struct CppCodeModelSettings
 {
     bool printUnknownEntries;
     bool printUnknownAttributes;
-    bool writeTypes;
+    bool writeClassTypes;
+    bool writeEnumTypes;
+    bool writeArrayTypes;
+    bool writeFunctionTypes;
+    bool writePointerToMemberTypes;
     bool writeVariables;
     bool writeFunctionDeclarations;
     bool writeFunctionDefinitions;
@@ -214,7 +218,7 @@ struct CppCodeModelSettings
     bool writeFunctionSizes;
     bool writeFunctionVariableLocations;
     bool sortTypesAlphabetically;
-    bool inlineMetrowerksUnnamedTypes;
+    bool inlineMetrowerksAnonymousTypes;
     bool hexadecimalEnumValues;
     bool forceExplicitEnumValues;
     QHash<Cpp::FundamentalType, QString> fundamentalTypeNames;
@@ -235,6 +239,7 @@ public:
     void writeDwarfEntry(QString& code, Elf32_Off offset) override;
     void writeFile(QString& code, const QString& path) override;
     QString dwarfEntryName(Elf32_Off offset) const override;
+    void setupSettingsMenu(QMenu* menu) override;
 
 protected:
     void parseDwarf(Dwarf* dwarf) override;

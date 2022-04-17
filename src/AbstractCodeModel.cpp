@@ -18,12 +18,7 @@ void AbstractCodeModel::setDwarf(Dwarf* dwarf)
     parseDwarf(dwarf);
 }
 
-void AbstractCodeModel::beginResetModel()
+void AbstractCodeModel::requestRewrite()
 {
-    emit modelAboutToBeReset();
-}
-
-void AbstractCodeModel::endResetModel()
-{
-    emit modelReset();
+    emit rewriteRequested();
 }

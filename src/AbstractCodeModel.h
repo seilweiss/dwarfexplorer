@@ -5,6 +5,7 @@
 #include "TypesModel.h"
 
 #include <qobject.h>
+#include <qmenu.h>
 
 class AbstractCodeModel : public QObject
 {
@@ -19,16 +20,15 @@ public:
     virtual void writeDwarfEntry(QString& code, Elf32_Off offset) = 0;
     virtual void writeFile(QString& code, const QString& path) = 0;
     virtual QString dwarfEntryName(Elf32_Off offset) const = 0;
+    virtual void setupSettingsMenu(QMenu* menu) = 0;
 
 signals:
-    void modelAboutToBeReset();
-    void modelReset();
+    void rewriteRequested();
 
 protected:
     virtual void parseDwarf(Dwarf* dwarf) = 0;
 
-    void beginResetModel();
-    void endResetModel();
+    void requestRewrite();
 
 private:
     Dwarf* m_dwarf;

@@ -8,6 +8,7 @@
 
 #include <qlineedit.h>
 #include <qpushbutton.h>
+#include <qmenu.h>
 
 class CodeView : public QWidget
 {
@@ -25,15 +26,30 @@ public:
     void viewFile(const QString& path);
 
 private:
+    struct ViewInfo
+    {
+        enum
+        {
+            None,
+            DwarfEntry,
+            File
+        } mode;
+        Elf32_Off dwarfEntryOffset;
+        QString filePath;
+    };
+
+    ViewInfo m_viewInfo;
     AbstractCodeModel* m_model;
     QsciScintilla* m_editor;
     QString m_code;
     QLineEdit* m_pathLineEdit;
     QPushButton* m_saveButton;
     QPushButton* m_settingsButton;
+    QMenu* m_settingsMenu;
 
-    void refresh();
+    void refresh(bool retainScroll);
 
 private slots:
     void onSaveButtonClicked();
+    void onModelRewriteRequested();
 };

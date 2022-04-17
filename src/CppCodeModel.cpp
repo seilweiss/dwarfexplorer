@@ -16,11 +16,15 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
 {
     true, // printUnknownEntries
     true, // printUnknownAttributes
-    true, // writeTypes
+    true, // writeClassTypes
+    true, // writeEnumTypes
+    true, // writeArrayTypes
+    true, // writeFunctionTypes
+    true, // writePointerToMemberTypes
     true, // writeVariables
     true, // writeFunctionDeclarations
     true, // writeFunctionDefinitions
-    false, // writeDwarfEntryOffsets
+    true, // writeDwarfEntryOffsets
     true, // writeClassSizes
     true, // writeClassMemberOffsets
     true, // writeClassMemberBitOffsets
@@ -29,10 +33,10 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeVariableMangledNames
     true, // writeFunctionMangledNames
     true, // writeFunctionAddresses
-    false, // writeFunctionSizes
+    true, // writeFunctionSizes
     true, // writeFunctionVariableLocations
-    true, // sortTypesAlphabetically
-    true, // inlineMetrowerksUnnamedTypes
+    false, // sortTypesAlphabetically
+    true, // inlineMetrowerksAnonymousTypes
     false, // hexadecimalEnumValues
     false, // forceExplicitEnumValues
 
@@ -109,8 +113,6 @@ const CppCodeModelSettings& CppCodeModel::settings() const
 
 void CppCodeModel::clear()
 {
-    beginResetModel();
-
     m_pathToOffsetMultiMap.clear();
     m_offsetToEntryMap.clear();
     m_offsetToFileMap.clear();
@@ -122,7 +124,7 @@ void CppCodeModel::clear()
     m_offsetToFunctionMap.clear();
     m_offsetToVariableMap.clear();
 
-    endResetModel();
+    requestRewrite();
 }
 
 void CppCodeModel::parseDwarf(Dwarf* dwarf)
@@ -137,8 +139,6 @@ void CppCodeModel::parseDwarf(Dwarf* dwarf)
     {
         return;
     }
-
-    beginResetModel();
 
     if (dwarf->entryCount > 0)
     {
@@ -174,7 +174,7 @@ void CppCodeModel::parseDwarf(Dwarf* dwarf)
         }
     }
 
-    endResetModel();
+    requestRewrite();
 }
 
 void CppCodeModel::parseCompileUnit(DwarfEntry* entry)
@@ -1277,38 +1277,68 @@ void CppCodeModel::writeFiles(QString& code, const QList<Elf32_Off>& fileOffsets
         }
     }
 
-    if (m_settings.writeTypes)
+    for (Elf32_Off fileOffset : fileOffsets)
     {
-        for (Elf32_Off fileOffset : fileOffsets)
+        Cpp::File& file = m_offsetToFileMap[fileOffset];
+        QList<DwarfEntry*> entries;
+
+        for (Elf32_Off typeOffset : file.typeOffsets)
         {
-            Cpp::File& file = m_offsetToFileMap[fileOffset];
-            QList<DwarfEntry*> entries;
+            DwarfEntry* entry = m_offsetToEntryMap[typeOffset];
 
-            for (Elf32_Off typeOffset : file.typeOffsets)
+            if (!typeCanBeInlined(entry->getName()))
             {
-                DwarfEntry* entry = m_offsetToEntryMap[typeOffset];
+                entries.append(entry);
+            }
+        }
 
-                if (!typeCanBeInlined(entry->getName()))
+        if (m_settings.sortTypesAlphabetically)
+        {
+            std::sort(entries.begin(), entries.end(),
+                [](DwarfEntry* a, DwarfEntry* b)
                 {
-                    entries.append(entry);
+                    return stricmp(a->getName(), b->getName()) < 0;
+                });
+        }
+
+        for (DwarfEntry* entry : entries)
+        {
+            switch (entry->tag)
+            {
+            case DW_TAG_class_type:
+            case DW_TAG_structure_type:
+            case DW_TAG_union_type:
+                if (!m_settings.writeClassTypes)
+                {
+                    continue;
+                }
+                break;
+            case DW_TAG_enumeration_type:
+                if (!m_settings.writeEnumTypes)
+                {
+                    continue;
+                }
+                break;
+            case DW_TAG_array_type:
+                if (!m_settings.writeArrayTypes)
+                {
+                    continue;
+                }
+            case DW_TAG_subroutine_type:
+                if (!m_settings.writeFunctionTypes)
+                {
+                    continue;
+                }
+            case DW_TAG_ptr_to_member_type:
+                if (!m_settings.writePointerToMemberTypes)
+                {
+                    continue;
                 }
             }
 
-            if (m_settings.sortTypesAlphabetically)
-            {
-                std::sort(entries.begin(), entries.end(),
-                    [](DwarfEntry* a, DwarfEntry* b)
-                    {
-                        return stricmp(a->getName(), b->getName()) < 0;
-                    });
-            }
-
-            for (DwarfEntry* entry : entries)
-            {
-                writeDwarfEntry(code, entry->offset);
-                writeNewline(code);
-                writeNewline(code);
-            }
+            writeDwarfEntry(code, entry->offset);
+            writeNewline(code);
+            writeNewline(code);
         }
     }
 
@@ -2329,7 +2359,7 @@ bool CppCodeModel::typeCanBeInlined(const QString& name) const
     // Metrowerks generates names for unnamed things (types, initializers, float constants, etc.).
     // They always start with '@', which is invalid in C/C++.
     // So it should be safe to assume all types starting with '@' were inlined in the original source.
-    if (m_settings.inlineMetrowerksUnnamedTypes && name.startsWith("@"))
+    if (m_settings.inlineMetrowerksAnonymousTypes && name.startsWith("@"))
     {
         return true;
     }
@@ -2342,4 +2372,236 @@ QString CppCodeModel::dwarfEntryName(Elf32_Off offset) const
     Q_ASSERT(m_offsetToEntryMap.contains(offset));
 
     return m_offsetToEntryMap[offset]->getName();
+}
+
+void CppCodeModel::setupSettingsMenu(QMenu* menu)
+{
+    QAction* action;
+
+    action = menu->addAction(tr("Write classes/structs/unions"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeClassTypes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeClassTypes = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Write enums"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeEnumTypes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeEnumTypes = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Write array typedefs"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeArrayTypes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeArrayTypes = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Write function typedefs"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeFunctionTypes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeFunctionTypes = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Write pointer-to-member typedefs"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writePointerToMemberTypes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writePointerToMemberTypes = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Write variables"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeVariables);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeVariables = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Write function declarations"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeFunctionDeclarations);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeFunctionDeclarations = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Write function definitions"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeFunctionDefinitions);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeFunctionDefinitions = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Sort types alphabetically"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.sortTypesAlphabetically);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.sortTypesAlphabetically = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Inline Metrowerks anonymous types (@class, @enum, etc.)"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.inlineMetrowerksAnonymousTypes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.inlineMetrowerksAnonymousTypes = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Hexadecimal enum values"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.hexadecimalEnumValues);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.hexadecimalEnumValues = action->isChecked();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Explicit enum values"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.forceExplicitEnumValues);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.forceExplicitEnumValues = action->isChecked();
+            requestRewrite();
+        });
+
+    /* Comments */
+    QMenu* commentsMenu = menu->addMenu(tr("Comments"));
+    action = commentsMenu->addAction(tr("DWARF entry offsets"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeDwarfEntryOffsets);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeDwarfEntryOffsets = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Class sizes"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeClassSizes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeClassSizes = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Class member offsets"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeClassMemberOffsets);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeClassMemberOffsets = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Class member bitfield offsets"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeClassMemberBitOffsets);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeClassMemberBitOffsets = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Class member bitfield sizes"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeClassMemberBitSizes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeClassMemberBitSizes = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Variable addresses"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeVariableAddresses);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeVariableAddresses = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Variable mangled names"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeVariableMangledNames);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeVariableMangledNames = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Function mangled names"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeFunctionMangledNames);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeFunctionMangledNames = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Function addresses"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeFunctionAddresses);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeFunctionAddresses = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Function sizes"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeFunctionSizes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeFunctionSizes = action->isChecked();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Function registers"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeFunctionVariableLocations);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeFunctionVariableLocations = action->isChecked();
+            requestRewrite();
+        });
+
+    /* Output */
+    QMenu* outputMenu = menu->addMenu(tr("Output"));
+    action = outputMenu->addAction(tr("Unknown DWARF entries"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.printUnknownEntries);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.printUnknownEntries = action->isChecked();
+        });
+
+    action = outputMenu->addAction(tr("Unknown DWARF attributes"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.printUnknownAttributes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.printUnknownAttributes = action->isChecked();
+        });
 }
