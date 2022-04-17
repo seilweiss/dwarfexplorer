@@ -186,6 +186,8 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\FunctionsModel.cpp" />
+    <ClCompile Include="src\FunctionsView.cpp" />
     <ClCompile Include="src\Icons.cpp" />
     <ClCompile Include="src\AbstractCodeModel.cpp" />
     <ClCompile Include="src\CodeView.cpp" />
@@ -206,6 +208,7 @@
     <ClCompile Include="src\Util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="src\FunctionsView.h" />
     <ClInclude Include="src\Icons.h" />
     <ClInclude Include="src\Util.h" />
     <QtMoc Include="src\DwarfView.h" />

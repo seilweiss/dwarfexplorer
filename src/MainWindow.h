@@ -8,6 +8,8 @@
 #include "DwarfView.h"
 #include "FilesModel.h"
 #include "FilesView.h"
+#include "FunctionsModel.h"
+#include "FunctionsView.h"
 #include "TypesModel.h"
 #include "TypesView.h"
 #include "AbstractCodeModel.h"
@@ -39,6 +41,8 @@ private:
     DwarfView* m_dwarfView;
     FilesModel* m_filesModel;
     FilesView* m_filesView;
+    FunctionsModel* m_functionsModel;
+    FunctionsView* m_functionsView;
     TypesModel* m_typesModel;
     TypesView* m_typesView;
     AbstractCodeModel* m_codeModel;
@@ -53,5 +57,7 @@ private slots:
     void filesFileSelected(const QString& path);
     void filesDirectorySelected(const QString& path);
     void filesNoneSelected();
+    void functionsFunctionSelected(Elf32_Off dwarfOffset);
+    void functionsNoneSelected();
     void typesTypeDefinitionSelected(Elf32_Off dwarfOffset);
 };

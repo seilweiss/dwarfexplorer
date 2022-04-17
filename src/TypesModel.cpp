@@ -268,7 +268,6 @@ QString TypesModel::typeName(const QModelIndex& index) const
 		return QString();
 	}
 
-	QStringList parts;
 	const TypesModelItem* item = (TypesModelItem*)index.internalPointer();
 
 	if (item->type == TypesModelItem::TypeItem)
@@ -290,7 +289,6 @@ QString TypesModel::compileUnit(const QModelIndex& index) const
 		return QString();
 	}
 
-	QStringList parts;
 	const TypesModelItem* item = (TypesModelItem*)index.internalPointer();
 
 	if (item->type == TypesModelItem::TypeItem)

@@ -1,28 +1,31 @@
 #pragma once
 
-#include <qtablewidget.h>
+#include <qabstractitemmodel.h>
 
 #include "Dwarf.h"
 
-#if 0
-class FunctionsModel : public QTableWidget
+struct FunctionsModelItem
+{
+    QString name;
+    Elf32_Addr address;
+    Elf32_Off dwarfOffset;
+    bool isPublic;
+    QString fileName;
+};
+
+class FunctionsModel : public QAbstractItemModel
 {
     Q_OBJECT
 
 public:
     FunctionsModel(QObject* parent = nullptr);
-    ~FunctionsModel();
 
-    void clear();
+    Dwarf* dwarf() const;
+    void setDwarf(Dwarf* dwarf);
 
-    QList<TypesModelDefinition> typeDefinitions() const;
-    void setTypeDefinitions(const QList<TypesModelDefinition>& definitions);
-
-    QString typeName(const QModelIndex& index) const;
-    QString compileUnit(const QModelIndex& index) const;
+    QString name(const QModelIndex& index) const;
+    Elf32_Addr address(const QModelIndex& index) const;
     Elf32_Off dwarfOffset(const QModelIndex& index) const;
-    bool isType(const QModelIndex& index) const;
-    bool isDefinition(const QModelIndex& index) const;
 
     QVariant data(const QModelIndex& index, int role) const override;
     Qt::ItemFlags flags(const QModelIndex& index) const override;
@@ -30,12 +33,12 @@ public:
     QModelIndex parent(const QModelIndex& child) const override;
     int rowCount(const QModelIndex& parent) const override;
     int columnCount(const QModelIndex& parent) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
 private:
-    QList<TypesModelDefinition> m_typeDefinitions;
-    QMap<QString, TypesModelItem> m_typeItemMap;
+    Dwarf* m_dwarf;
+    QList<FunctionsModelItem> m_items;
 
     void clearItems();
     void refresh();
 };
-#endif

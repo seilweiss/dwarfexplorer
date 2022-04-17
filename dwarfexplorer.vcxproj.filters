@@ -81,6 +81,12 @@
     <ClCompile Include="src\Icons.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\FunctionsModel.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FunctionsView.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Dwarf.h">
@@ -145,6 +151,9 @@
       <Filter>Generated Files</Filter>
     </QtMoc>
     <QtMoc Include="src\FunctionsModel.h">
+      <Filter>Generated Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\FunctionsView.h">
       <Filter>Generated Files</Filter>
     </QtMoc>
   </ItemGroup>
