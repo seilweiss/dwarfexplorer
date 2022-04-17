@@ -8,4 +8,9 @@ class OutputView : public QPlainTextEdit
 
 public:
     OutputView(QWidget* parent = nullptr);
+
+    void contextMenuEvent(QContextMenuEvent* event) override;
+
+private:
+    QMenu* m_contextMenu;
 };
