@@ -99,7 +99,7 @@ void VariablesModel::refresh()
 						case DW_AT_name:
 							item.name = attr->string;
 							break;
-						case DW_AT_mangled:
+						case DW_AT_MW_mangled:
 							item.name = attr->string;
 							break;
 						case DW_AT_location:

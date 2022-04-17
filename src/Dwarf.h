@@ -111,8 +111,18 @@
 #define DW_AT_hi_user 0x3ff0
 
 // Metrowerks
-#define DW_AT_mangled (0x2000|DW_FORM_STRING)
-#define DW_AT_source_info (0x2020|DW_FORM_REF)
+#define DW_AT_MW_mangled (0x2000|DW_FORM_STRING)
+#define DW_AT_MW_restore_SP (0x2010|DW_FORM_BLOCK2)
+#define DW_AT_MW_global_ref (0x2020|DW_FORM_REF)
+#define DW_AT_MW_global_ref_by_name (0x2030|DW_FORM_STRING)
+#define DW_AT_MW_DWARF2_location (0x2340|DW_FORM_BLOCK2)
+#define DW_AT_MW_source_file_names (0x8000|DW_FORM_DATA4)
+#define DW_AT_MW_src_info (0x8010|DW_FORM_DATA4)
+#define DW_AT_MW_mac_info (0x8020|DW_FORM_DATA4)
+#define DW_AT_MW_src_coords (0x8030|DW_FORM_DATA4)
+#define DW_AT_MW_body_begin (0x8040|DW_FORM_ADDR)
+#define DW_AT_MW_body_end (0x8050|DW_FORM_ADDR)
+#define DW_AT_MW_source_info (0x8100|DW_FORM_DATA4)
 
 #define DW_OP_REG 0x01
 #define DW_OP_BASEREG 0x02

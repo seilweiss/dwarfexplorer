@@ -15,7 +15,7 @@ static int s_warningCount = 0;
 CppCodeModelSettings CppCodeModel::s_defaultSettings
 {
 	true, // printUnknownEntries
-	false, // printUnknownAttributes
+	true, // printUnknownAttributes
 	true, // writeTypes
 	true, // writeVariables
 	true, // writeFunctionDeclarations
@@ -333,6 +333,10 @@ void CppCodeModel::parseMember(DwarfEntry* entry, Cpp::ClassType& c)
 		case DW_AT_bit_size:
 			m.isBitfield = true;
 			m.bitSize = attr->data4;
+			break;
+
+		// Ignored attributes
+		case DW_AT_byte_size:
 			break;
 
 		// Unknown attribute
@@ -687,12 +691,13 @@ void CppCodeModel::parseSubroutine(DwarfEntry* entry, Cpp::File& file)
 			break;
 
 		// Metrowerks mangled name attribute
-		case DW_AT_mangled:
+		case DW_AT_MW_mangled:
 			f.mangledName = attr->string;
 			break;
 
 		// Ignored attributes
-		case DW_AT_source_info:
+		case DW_AT_MW_global_ref:
+		case DW_AT_return_addr:
 			break;
 
 		// Unknown attribute
@@ -765,6 +770,10 @@ void CppCodeModel::parseFormalParameter(DwarfEntry* entry, Cpp::FunctionType& f)
 		case DW_AT_location:
 			locationAttribute = attr;
 			break;
+
+		// Ignored attributes
+		case DW_AT_MW_DWARF2_location:
+			break;
 		
 		// Unknown attribute
 		default:
@@ -835,6 +844,10 @@ void CppCodeModel::parseLocalVariable(DwarfEntry* entry, Cpp::Function& f)
 		// Location attribute
 		case DW_AT_location:
 			locationAttribute = attr;
+			break;
+
+		// Ignored attributes
+		case DW_AT_MW_DWARF2_location:
 			break;
 
 		// Unknown attribute
@@ -969,7 +982,7 @@ void CppCodeModel::parseVariable(DwarfEntry* entry, Cpp::File& f)
 			break;
 
 		// Metrowerks mangled name attribute
-		case DW_AT_mangled:
+		case DW_AT_MW_mangled:
 			v.mangledName = attr->string;
 			break;
 

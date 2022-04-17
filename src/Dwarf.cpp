@@ -471,8 +471,18 @@ const char* Dwarf::attrNameToString(Elf32_Half name)
     case DW_AT_upper_bound_data4: return "AT_upper_bound_data4";
     case DW_AT_upper_bound_data8: return "AT_upper_bound_data8";
     case DW_AT_virtual: return "AT_virtual";
-    case DW_AT_mangled: return "AT_mangled";
-    case DW_AT_source_info: return "AT_source_info";
+    case DW_AT_MW_mangled: return "AT_mangled";
+    case DW_AT_MW_restore_SP: return "AT_restore_SP";
+    case DW_AT_MW_global_ref: return "AT_global_ref";
+    case DW_AT_MW_global_ref_by_name: return "AT_global_ref_by_name";
+    case DW_AT_MW_DWARF2_location: return "AT_DWARF2_location";
+    case DW_AT_MW_source_file_names: return "AT_source_file_names";
+    case DW_AT_MW_src_info: return "AT_src_info";
+    case DW_AT_MW_mac_info: return "AT_mac_info";
+    case DW_AT_MW_src_coords: return "AT_src_coords";
+    case DW_AT_MW_body_begin: return "AT_body_begin";
+    case DW_AT_MW_body_end: return "AT_body_end";
+    case DW_AT_MW_source_info: return "AT_source_info";
     }
 
     sprintf(defaultString, "AT_<unknown 0x%x>", name);
