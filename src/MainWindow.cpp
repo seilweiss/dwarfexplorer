@@ -135,7 +135,6 @@ void MainWindow::openFile()
     m_dwarfModel->setDwarf(&m_dwarf);
     m_filesModel->setDwarf(&m_dwarf);
     m_typesModel->setDwarf(&m_dwarf);
-    m_typesView->updateSpans();
     m_codeModel->setDwarf(&m_dwarf);
 }
 

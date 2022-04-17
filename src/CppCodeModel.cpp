@@ -233,7 +233,6 @@ void CppCodeModel::parseClassType(DwarfEntry* entry, Cpp::File& file)
 		c.keyword = Cpp::Keyword::Struct;
 		break;
 	case DW_TAG_union_type:
-		Output::write(Util::hexToString(entry->offset));
 		c.keyword = Cpp::Keyword::Union;
 		break;
 	}

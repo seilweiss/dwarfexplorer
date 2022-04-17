@@ -178,6 +178,27 @@ Qt::ItemFlags FilesModel::flags(const QModelIndex& index) const
 	return QAbstractItemModel::flags(index);
 }
 
+QVariant FilesModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+	if (role != Qt::DisplayRole)
+	{
+		return QVariant();
+	}
+
+	if (orientation != Qt::Horizontal)
+	{
+		return QVariant();
+	}
+
+	switch (section)
+	{
+	case 0:
+		return tr("Name");
+	}
+
+	return QVariant();
+}
+
 QString FilesModel::path(const QModelIndex& index) const
 {
 	if (!index.isValid())

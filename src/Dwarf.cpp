@@ -87,6 +87,8 @@ static void countEntry(const Elf* elf, char*& data, int& entryCount, int& attrib
 
 static void readAttribute(const Elf* elf, char*& data, DwarfAttribute*& attribute)
 {
+    char* start = data;
+
     attribute->name = elf->read<Elf32_Half>(data);
 
     switch (attribute->name & 0xf)
@@ -144,6 +146,8 @@ static void readAttribute(const Elf* elf, char*& data, DwarfAttribute*& attribut
         break;
     }
     }
+
+    attribute->length = (Elf32_Off)(data - start);
 
     attribute++;
 }
@@ -445,6 +449,28 @@ const char* Dwarf::attrNameToString(Elf32_Half name)
     case DW_AT_default_value_data8: return "AT_default_value_data8";
     case DW_AT_default_value_string: return "AT_default_value_string";
     case DW_AT_friends: return "AT_friends";
+    case DW_AT_inline: return "AT_inline";
+    case DW_AT_is_optional: return "AT_is_optional";
+    case DW_AT_lower_bound_ref: return "AT_lower_bound_ref";
+    case DW_AT_lower_bound_data2: return "AT_lower_bound_data2";
+    case DW_AT_lower_bound_data4: return "AT_lower_bound_data4";
+    case DW_AT_lower_bound_data8: return "AT_lower_bound_data8";
+    case DW_AT_program: return "AT_program";
+    case DW_AT_private: return "AT_private";
+    case DW_AT_producer: return "AT_producer";
+    case DW_AT_protected: return "AT_protected";
+    case DW_AT_prototyped: return "AT_prototyped";
+    case DW_AT_public: return "AT_public";
+    case DW_AT_pure_virtual: return "AT_pure_virtual";
+    case DW_AT_return_addr: return "AT_return_addr";
+    case DW_AT_specification: return "AT_specification";
+    case DW_AT_start_scope: return "AT_start_scope";
+    case DW_AT_stride_size: return "AT_stride_size";
+    case DW_AT_upper_bound_ref: return "AT_upper_bound_ref";
+    case DW_AT_upper_bound_data2: return "AT_upper_bound_data2";
+    case DW_AT_upper_bound_data4: return "AT_upper_bound_data4";
+    case DW_AT_upper_bound_data8: return "AT_upper_bound_data8";
+    case DW_AT_virtual: return "AT_virtual";
     case DW_AT_mangled: return "AT_mangled";
     case DW_AT_source_info: return "AT_source_info";
     }

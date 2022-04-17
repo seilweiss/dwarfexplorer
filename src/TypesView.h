@@ -1,10 +1,13 @@
 #pragma once
 
-#include <qtreeview.h>
+#include <qwidget.h>
 
 #include "TypesModel.h"
 
-class TypesView : public QTreeView
+#include <qtreeview.h>
+#include <qlineedit.h>
+
+class TypesView : public QWidget
 {
 	Q_OBJECT
 
@@ -14,15 +17,20 @@ public:
 	TypesModel* model() const;
 	void setModel(TypesModel* model);
 
-	void updateSpans();
-
 signals:
 	void typeDefinitionSelected(Elf32_Off dwarfOffset);
 	void noneSelected();
 
 private:
+	QTreeView* m_treeView;
+	QLineEdit* m_filterLineEdit;
 	TypesModel* m_model;
+
+	void updateSpans();
+	void updateFilter();
 
 private slots:
 	void currentChanged(const QModelIndex& current, const QModelIndex& previous);
+	void onModelDwarfChanged(Dwarf* dwarf);
+	void onFilterLineEditTextChanged(const QString& text);
 };

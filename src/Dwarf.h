@@ -191,6 +191,7 @@ struct DwarfEntry;
 struct DwarfAttribute
 {
     Elf32_Off offset;
+    Elf32_Off length;
     Elf32_Half name;
 
     union

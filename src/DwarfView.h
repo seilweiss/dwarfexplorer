@@ -1,10 +1,12 @@
 #pragma once
 
-#include <qtreeview.h>
+#include <qwidget.h>
 
 #include "DwarfModel.h"
 
-class DwarfView : public QTreeView
+#include <qtreeview.h>
+
+class DwarfView : public QWidget
 {
 	Q_OBJECT
 
@@ -20,6 +22,7 @@ signals:
 	void noneSelected();
 
 private:
+	QTreeView* m_treeView;
 	DwarfModel* m_model;
 
 private slots:

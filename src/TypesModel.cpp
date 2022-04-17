@@ -23,6 +23,8 @@ void TypesModel::setDwarf(Dwarf* dwarf)
 	beginResetModel();
 	refresh();
 	endResetModel();
+
+	emit dwarfChanged(dwarf);
 }
 
 void TypesModel::clearItems()
@@ -277,6 +279,8 @@ QString TypesModel::typeName(const QModelIndex& index) const
 	{
 		return item->parentItem->typeNameOrCompileUnit;
 	}
+
+	return QString();
 }
 
 QString TypesModel::compileUnit(const QModelIndex& index) const
@@ -297,6 +301,8 @@ QString TypesModel::compileUnit(const QModelIndex& index) const
 	{
 		return item->typeNameOrCompileUnit;
 	}
+
+	return QString();
 }
 
 Elf32_Off TypesModel::dwarfOffset(const QModelIndex& index) const
@@ -316,6 +322,8 @@ Elf32_Off TypesModel::dwarfOffset(const QModelIndex& index) const
 	{
 		return item->typeDwarfOffset;
 	}
+
+	return 0;
 }
 
 bool TypesModel::isType(const QModelIndex& index) const

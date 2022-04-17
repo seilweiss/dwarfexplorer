@@ -1,5 +1,7 @@
 #include "DwarfModel.h"
 
+#include "Util.h"
+
 static DwarfModelItem* getSiblingItem(DwarfModelItem* item, int index)
 {
     for (int i = 0; i < index; i++)
@@ -209,7 +211,7 @@ int DwarfModel::rowCount(const QModelIndex& parent) const
 
 int DwarfModel::columnCount(const QModelIndex& parent) const
 {
-    return 1;
+    return 3;
 }
 
 QVariant DwarfModel::data(const QModelIndex& index, int role) const
@@ -230,56 +232,59 @@ QVariant DwarfModel::data(const QModelIndex& index, int role) const
     }
 
     DwarfModelItem* item = (DwarfModelItem*)index.internalPointer();
-    QString text;
 
     if (item->type == DwarfModelItem::EntryItem)
     {
         DwarfEntry* entry = item->e.entry;
 
-        text = QString("%1: <%2> %3")
-            .arg(entry->offset, 4, 16, QLatin1Char('0'))
-            .arg(entry->length)
-            .arg(entry->isNull() ? QString() : Dwarf::tagToString(entry->tag));
-
-        DwarfAttribute* nameAttribute = entry->findAttribute(DW_AT_name);
-
-        if (nameAttribute)
+        switch (index.column())
         {
-            text += QString(" (%1)").arg(nameAttribute->string);
+        case 0:
+            return Util::hexToString(entry->offset);
+        case 1:
+            return entry->isNull() ? QString() : Dwarf::tagToString(entry->tag);
+        case 2:
+            return entry->getName();
         }
     }
     else if (item->type == DwarfModelItem::AttributeItem)
     {
         DwarfAttribute* attribute = item->a.attribute;
 
-        text = Dwarf::attrNameToString(attribute->name);
-
-        switch (attribute->getForm())
+        switch (index.column())
         {
-        case DW_FORM_ADDR:
-            text += QString("(0x%1)").arg(attribute->addr, 8, 16, QLatin1Char('0'));
-            break;
-        case DW_FORM_REF:
-            text += QString("(0x%1)").arg(attribute->ref, 0, 16);
-            break;
-        case DW_FORM_DATA2:
-            text += QString("(%1)").arg(attribute->data2);
-            break;
-        case DW_FORM_DATA4:
-            text += QString("(%1)").arg(attribute->data4);
-            break;
-        case DW_FORM_DATA8:
-            text += QString("(%1)").arg(attribute->data8);
-            break;
-        case DW_FORM_STRING:
-            text += QString("(\"%1\")").arg(attribute->string);
-            break;
-        default:
-            text += "()";
+        case 0:
+            return Util::hexToString(attribute->offset);
+        case 1:
+            return Dwarf::attrNameToString(attribute->name);
+        case 2:
+            switch (attribute->getForm())
+            {
+            case DW_FORM_ADDR:
+                return QString("0x%1").arg(attribute->addr, 8, 16, QLatin1Char('0'));
+                break;
+            case DW_FORM_REF:
+                return QString("0x%1").arg(attribute->ref, 0, 16);
+                break;
+            case DW_FORM_DATA2:
+                return QString("%1").arg(attribute->data2);
+                break;
+            case DW_FORM_DATA4:
+                return QString("%1").arg(attribute->data4);
+                break;
+            case DW_FORM_DATA8:
+                return QString("%1").arg(attribute->data8);
+                break;
+            case DW_FORM_STRING:
+                return attribute->string;
+                break;
+            default:
+                return QString();
+            }
         }
     }
 
-    return text;
+    return QString();
 }
 
 Qt::ItemFlags DwarfModel::flags(const QModelIndex& index) const
@@ -290,6 +295,31 @@ Qt::ItemFlags DwarfModel::flags(const QModelIndex& index) const
     }
 
     return QAbstractItemModel::flags(index);
+}
+
+QVariant DwarfModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (role != Qt::DisplayRole)
+    {
+        return QVariant();
+    }
+
+    if (orientation != Qt::Horizontal)
+    {
+        return QVariant();
+    }
+
+    switch (section)
+    {
+    case 0:
+        return tr("Offset");
+    case 1:
+        return tr("Tag");
+    case 2:
+        return tr("Name/Data");
+    }
+
+    return QVariant();
 }
 
 DwarfEntry* DwarfModel::entry(const QModelIndex& index) const
