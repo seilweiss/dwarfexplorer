@@ -10,6 +10,8 @@
 #include "FilesView.h"
 #include "FunctionsModel.h"
 #include "FunctionsView.h"
+#include "VariablesModel.h"
+#include "VariablesView.h"
 #include "TypesModel.h"
 #include "TypesView.h"
 #include "AbstractCodeModel.h"
@@ -43,6 +45,8 @@ private:
     FilesView* m_filesView;
     FunctionsModel* m_functionsModel;
     FunctionsView* m_functionsView;
+    VariablesModel* m_variablesModel;
+    VariablesView* m_variablesView;
     TypesModel* m_typesModel;
     TypesView* m_typesView;
     AbstractCodeModel* m_codeModel;
@@ -59,5 +63,7 @@ private slots:
     void filesNoneSelected();
     void functionsFunctionSelected(Elf32_Off dwarfOffset);
     void functionsNoneSelected();
+    void variablesVariableSelected(Elf32_Off dwarfOffset);
+    void variablesNoneSelected();
     void typesTypeDefinitionSelected(Elf32_Off dwarfOffset);
 };

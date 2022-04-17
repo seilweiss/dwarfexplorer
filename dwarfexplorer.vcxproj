@@ -206,8 +206,12 @@
     <ClCompile Include="src\TypesModel.cpp" />
     <ClCompile Include="src\TypesView.cpp" />
     <ClCompile Include="src\Util.cpp" />
+    <ClCompile Include="src\VariablesModel.cpp" />
+    <ClCompile Include="src\VariablesView.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="src\VariablesView.h" />
+    <QtMoc Include="src\VariablesModel.h" />
     <QtMoc Include="src\FunctionsView.h" />
     <ClInclude Include="src\Icons.h" />
     <ClInclude Include="src\Util.h" />

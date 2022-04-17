@@ -22,6 +22,8 @@ MainWindow::MainWindow(QWidget *parent)
     , m_filesView(new FilesView(this))
     , m_functionsModel(new FunctionsModel(this))
     , m_functionsView(new FunctionsView(this))
+    , m_variablesModel(new VariablesModel(this))
+    , m_variablesView(new VariablesView(this))
     , m_typesModel(new TypesModel(this))
     , m_typesView(new TypesView(this))
     , m_codeModel(new CppCodeModel(this))
@@ -35,11 +37,13 @@ MainWindow::MainWindow(QWidget *parent)
     m_tabWidget->addTab(m_dwarfView, tr("DWARF Tree"));
     m_tabWidget->addTab(m_filesView, tr("Files"));
     m_tabWidget->addTab(m_functionsView, tr("Functions"));
+    m_tabWidget->addTab(m_variablesView, tr("Variables"));
     m_tabWidget->addTab(m_typesView, tr("Types"));
 
     m_dwarfView->setModel(m_dwarfModel);
     m_filesView->setModel(m_filesModel);
     m_functionsView->setModel(m_functionsModel);
+    m_variablesView->setModel(m_variablesModel);
     m_typesView->setModel(m_typesModel);
     m_codeView->setModel(m_codeModel);
 
@@ -49,6 +53,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_filesView, &FilesView::noneSelected, this, &MainWindow::filesNoneSelected);
     connect(m_functionsView, &FunctionsView::functionSelected, this, &MainWindow::functionsFunctionSelected);
     connect(m_functionsView, &FunctionsView::noneSelected, this, &MainWindow::functionsNoneSelected);
+    connect(m_variablesView, &VariablesView::variableSelected, this, &MainWindow::variablesVariableSelected);
+    connect(m_variablesView, &VariablesView::noneSelected, this, &MainWindow::variablesNoneSelected);
     connect(m_typesView, &TypesView::typeDefinitionSelected, this, &MainWindow::typesTypeDefinitionSelected);
 
     QMenu* fileMenu = menuBar()->addMenu(tr("File"));
@@ -141,6 +147,7 @@ void MainWindow::openFile()
     m_dwarfModel->setDwarf(&m_dwarf);
     m_filesModel->setDwarf(&m_dwarf);
     m_functionsModel->setDwarf(&m_dwarf);
+    m_variablesModel->setDwarf(&m_dwarf);
     m_typesModel->setDwarf(&m_dwarf);
     m_codeModel->setDwarf(&m_dwarf);
 }
@@ -152,6 +159,7 @@ void MainWindow::closeFile()
     m_dwarfModel->setDwarf(nullptr);
     m_filesModel->setDwarf(nullptr);
     m_functionsModel->setDwarf(nullptr);
+    m_variablesModel->setDwarf(nullptr);
     m_typesModel->setDwarf(nullptr);
     m_codeModel->setDwarf(nullptr);
     m_codeView->clear();
@@ -191,6 +199,15 @@ void MainWindow::functionsFunctionSelected(Elf32_Off dwarfOffset)
 }
 
 void MainWindow::functionsNoneSelected()
+{
+}
+
+void MainWindow::variablesVariableSelected(Elf32_Off dwarfOffset)
+{
+    m_codeView->viewDwarfEntry(dwarfOffset);
+}
+
+void MainWindow::variablesNoneSelected()
 {
 }
 
