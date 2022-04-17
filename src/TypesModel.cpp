@@ -89,6 +89,9 @@ void TypesModel::refresh()
 				case DW_TAG_subroutine_type:
 					typeKeyword = "function";
 					break;
+				case DW_TAG_ptr_to_member_type:
+					typeKeyword = "pointer-to-member";
+					break;
 				default:
 					isTypeEntry = false;
 					break;

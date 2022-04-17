@@ -88,6 +88,14 @@ namespace Cpp
 		QString name;
 	};
 
+	struct PointerToMemberType
+	{
+		DwarfEntry* entry;
+		Type type;
+		Type containingType;
+		QString name;
+	};
+
 	struct ClassMember : Declaration
 	{
 		Keyword access;
@@ -243,6 +251,7 @@ private:
 	QHash<Elf32_Off, Cpp::EnumType> m_offsetToEnumTypeMap;
 	QHash<Elf32_Off, Cpp::ArrayType> m_offsetToArrayTypeMap;
 	QHash<Elf32_Off, Cpp::FunctionType> m_offsetToFunctionTypeMap;
+	QHash<Elf32_Off, Cpp::PointerToMemberType> m_offsetToPointerToMemberTypeMap;
 	QHash<Elf32_Off, Cpp::Function> m_offsetToFunctionMap;
 	QHash<Elf32_Off, Cpp::Variable> m_offsetToVariableMap;
 	int m_indentLevel;
@@ -260,6 +269,7 @@ private:
 	void parseSubroutine(DwarfEntry* entry, Cpp::File& file);
 	void parseFormalParameter(DwarfEntry* entry, Cpp::FunctionType& f);
 	void parseLocalVariable(DwarfEntry* entry, Cpp::Function& f);
+	void parsePointerToMemberType(DwarfEntry* entry, Cpp::File& file);
 	void parseVariable(DwarfEntry* entry, Cpp::File& f);
 	void parseTypedef(DwarfEntry* entry, Cpp::Typedef& t);
 	void parseType(DwarfType& dt, Cpp::Type& t);
@@ -274,6 +284,7 @@ private:
 	void writeEnumElement(QString& code, Cpp::EnumElement& e, bool explicitValue);
 	void writeArrayType(QString& code, Cpp::ArrayType& a, bool isInline = false);
 	void writeFunctionType(QString& code, Cpp::FunctionType& f, bool isInline = false);
+	void writePointerToMemberType(QString& code, Cpp::PointerToMemberType& p, bool isInline = false);
 	void writeVariable(QString& code, Cpp::Variable& v);
 	void writeFunctionDeclaration(QString& code, Cpp::Function& f, bool isInsideClass = false);
 	void writeFunctionDefinition(QString& code, Cpp::Function& f);
@@ -293,6 +304,8 @@ private:
 	void writeFunctionTypePostfix(QString& code, Cpp::FunctionType& f);
 	void writeFunctionParameters(QString& code, Cpp::FunctionType& f, bool isDeclaration);
 	void writeFunctionParameter(QString& code, Cpp::FunctionParameter& p, bool isDeclaration);
+	void writePointerToMemberTypePrefix(QString& code, Cpp::PointerToMemberType& p);
+	void writePointerToMemberTypePostfix(QString& code, Cpp::PointerToMemberType& p);
 	void writeFundamentalType(QString& code, Cpp::FundamentalType t);
 	void writeModifier(QString& code, Cpp::Modifier& m);
 	void writeConstVolatile(QString& code, bool isConst, bool isVolatile);
