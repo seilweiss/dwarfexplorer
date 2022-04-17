@@ -10,6 +10,9 @@ TypesView::TypesView(QWidget* parent)
 	, m_filterLineEdit(new QLineEdit)
 	, m_model(nullptr)
 {
+	// sorting not implemented yet
+	//m_treeView->setSortingEnabled(true);
+
 	connect(m_filterLineEdit, &QLineEdit::textChanged, this, &TypesView::onFilterLineEditTextChanged);
 
 	QVBoxLayout* mainLayout = new QVBoxLayout;

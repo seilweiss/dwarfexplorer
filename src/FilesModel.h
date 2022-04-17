@@ -25,6 +25,12 @@ class FilesModel : public QAbstractItemModel
     Q_OBJECT
 
 public:
+    enum Column
+    {
+        NameColumn,
+        ColumnCount
+    };
+
     FilesModel(QObject* parent = nullptr);
 
     Dwarf* dwarf() const;

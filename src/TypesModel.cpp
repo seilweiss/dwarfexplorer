@@ -181,7 +181,7 @@ int TypesModel::rowCount(const QModelIndex& parent) const
 
 int TypesModel::columnCount(const QModelIndex& parent) const
 {
-	return 4;
+	return ColumnCount;
 }
 
 QVariant TypesModel::data(const QModelIndex& index, int role) const
@@ -202,7 +202,7 @@ QVariant TypesModel::data(const QModelIndex& index, int role) const
 	{
 		switch (index.column())
 		{
-		case 0:
+		case TypeColumn:
 			return item->typeNameOrCompileUnit;
 		}
 	}
@@ -210,13 +210,13 @@ QVariant TypesModel::data(const QModelIndex& index, int role) const
 	{
 		switch (index.column())
 		{
-		case 0:
+		case TypeColumn:
 			return item->typeKeyword;
-		case 1:
+		case CompileUnitColumn:
 			return item->typeNameOrCompileUnit;
-		case 2:
+		case SizeColumn:
 			return Util::hexToString(item->typeSize);
-		case 3:
+		case DwarfOffsetColumn:
 			return Util::hexToString(item->typeDwarfOffset);
 		}
 	}
@@ -248,17 +248,26 @@ QVariant TypesModel::headerData(int section, Qt::Orientation orientation, int ro
 
 	switch (section)
 	{
-	case 0:
+	case TypeColumn:
 		return tr("Type");
-	case 1:
+	case CompileUnitColumn:
 		return tr("Compile Unit");
-	case 2:
+	case SizeColumn:
 		return tr("Size");
-	case 3:
+	case DwarfOffsetColumn:
 		return tr("DWARF Offset");
 	}
 
 	return QVariant();
+}
+
+void TypesModel::sort(int column, Qt::SortOrder order)
+{
+	beginResetModel();
+
+	// TODO
+
+	endResetModel();
 }
 
 QString TypesModel::typeName(const QModelIndex& index) const

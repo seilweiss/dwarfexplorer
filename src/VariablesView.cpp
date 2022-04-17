@@ -10,6 +10,9 @@ VariablesView::VariablesView(QWidget* parent)
 	, m_filterLineEdit(new QLineEdit)
 	, m_model(nullptr)
 {
+	m_treeView->setSortingEnabled(true);
+	m_treeView->sortByColumn(VariablesModel::DwarfOffsetColumn, Qt::AscendingOrder);
+
 	connect(m_filterLineEdit, &QLineEdit::textChanged, this, &VariablesView::onFilterLineEditTextChanged);
 
 	QVBoxLayout* mainLayout = new QVBoxLayout;

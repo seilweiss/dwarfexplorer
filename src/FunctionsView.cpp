@@ -10,6 +10,9 @@ FunctionsView::FunctionsView(QWidget* parent)
 	, m_filterLineEdit(new QLineEdit)
 	, m_model(nullptr)
 {
+	m_treeView->setSortingEnabled(true);
+	m_treeView->sortByColumn(FunctionsModel::DwarfOffsetColumn, Qt::AscendingOrder);
+
 	connect(m_filterLineEdit, &QLineEdit::textChanged, this, &FunctionsView::onFilterLineEditTextChanged);
 
 	QVBoxLayout* mainLayout = new QVBoxLayout;

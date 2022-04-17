@@ -38,6 +38,14 @@ class DwarfModel : public QAbstractItemModel
     Q_OBJECT
 
 public:
+    enum Column
+    {
+        OffsetColumn,
+        TagColumn,
+        NameDataColumn,
+        ColumnCount
+    };
+
     DwarfModel(QObject* parent = nullptr);
     ~DwarfModel();
 

@@ -211,7 +211,7 @@ int DwarfModel::rowCount(const QModelIndex& parent) const
 
 int DwarfModel::columnCount(const QModelIndex& parent) const
 {
-    return 3;
+    return ColumnCount;
 }
 
 QVariant DwarfModel::data(const QModelIndex& index, int role) const
@@ -239,11 +239,11 @@ QVariant DwarfModel::data(const QModelIndex& index, int role) const
 
         switch (index.column())
         {
-        case 0:
+        case OffsetColumn:
             return Util::hexToString(entry->offset);
-        case 1:
+        case TagColumn:
             return entry->isNull() ? QString() : Dwarf::tagToString(entry->tag);
-        case 2:
+        case NameDataColumn:
             return entry->getName();
         }
     }
@@ -253,11 +253,11 @@ QVariant DwarfModel::data(const QModelIndex& index, int role) const
 
         switch (index.column())
         {
-        case 0:
+        case OffsetColumn:
             return Util::hexToString(attribute->offset);
-        case 1:
+        case TagColumn:
             return Dwarf::attrNameToString(attribute->name);
-        case 2:
+        case NameDataColumn:
             switch (attribute->getForm())
             {
             case DW_FORM_ADDR:
@@ -311,11 +311,11 @@ QVariant DwarfModel::headerData(int section, Qt::Orientation orientation, int ro
 
     switch (section)
     {
-    case 0:
+    case OffsetColumn:
         return tr("Offset");
-    case 1:
+    case TagColumn:
         return tr("Tag");
-    case 2:
+    case NameDataColumn:
         return tr("Name/Data");
     }
 

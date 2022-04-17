@@ -148,7 +148,7 @@ int FilesModel::rowCount(const QModelIndex& parent) const
 
 int FilesModel::columnCount(const QModelIndex& parent) const
 {
-	return 1;
+	return ColumnCount;
 }
 
 QVariant FilesModel::data(const QModelIndex& index, int role) const
@@ -192,7 +192,7 @@ QVariant FilesModel::headerData(int section, Qt::Orientation orientation, int ro
 
 	switch (section)
 	{
-	case 0:
+	case NameColumn:
 		return tr("Name");
 	}
 

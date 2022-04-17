@@ -18,6 +18,16 @@ class FunctionsModel : public QAbstractItemModel
     Q_OBJECT
 
 public:
+    enum Column
+    {
+        NameColumn,
+        FileColumn,
+        AddressColumn,
+        PublicColumn,
+        DwarfOffsetColumn,
+        ColumnCount
+    };
+
     FunctionsModel(QObject* parent = nullptr);
 
     Dwarf* dwarf() const;
@@ -34,6 +44,7 @@ public:
     int rowCount(const QModelIndex& parent) const override;
     int columnCount(const QModelIndex& parent) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
 
 private:
     Dwarf* m_dwarf;

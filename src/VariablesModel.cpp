@@ -163,7 +163,7 @@ int VariablesModel::rowCount(const QModelIndex& parent) const
 
 int VariablesModel::columnCount(const QModelIndex& parent) const
 {
-	return 5;
+	return ColumnCount;
 }
 
 QVariant VariablesModel::data(const QModelIndex& index, int role) const
@@ -182,15 +182,15 @@ QVariant VariablesModel::data(const QModelIndex& index, int role) const
 
 	switch (index.column())
 	{
-	case 0:
+	case NameColumn:
 		return item->name;
-	case 1:
+	case FileColumn:
 		return item->fileName;
-	case 2:
+	case AddressColumn:
 		return QString("0x%1").arg(item->address, 8, 16, QLatin1Char('0'));
-	case 3:
+	case PublicColumn:
 		return item->isPublic ? "P" : QString();
-	case 4:
+	case DwarfOffsetColumn:
 		return Util::hexToString(item->dwarfOffset);
 	}
 
@@ -221,19 +221,69 @@ QVariant VariablesModel::headerData(int section, Qt::Orientation orientation, in
 
 	switch (section)
 	{
-	case 0:
+	case NameColumn:
 		return tr("Name");
-	case 1:
+	case FileColumn:
 		return tr("File");
-	case 2:
+	case AddressColumn:
 		return tr("Address");
-	case 3:
+	case PublicColumn:
 		return tr("Public");
-	case 4:
+	case DwarfOffsetColumn:
 		return tr("DWARF Offset");
 	}
 
 	return QVariant();
+}
+
+void VariablesModel::sort(int column, Qt::SortOrder order)
+{
+	beginResetModel();
+
+	if (order == Qt::AscendingOrder)
+	{
+		switch (column)
+		{
+		case NameColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto& b) { return a.name < b.name; });
+			break;
+		case FileColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto& b) { return a.fileName < b.fileName; });
+			break;
+		case AddressColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto& b) { return a.address < b.address; });
+			break;
+		case PublicColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto&) { return !a.isPublic; });
+			break;
+		case DwarfOffsetColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto& b) { return a.dwarfOffset < b.dwarfOffset; });
+			break;
+		}
+	}
+	else
+	{
+		switch (column)
+		{
+		case NameColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto& b) { return a.name > b.name; });
+			break;
+		case FileColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto& b) { return a.fileName > b.fileName; });
+			break;
+		case AddressColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto& b) { return a.address > b.address; });
+			break;
+		case PublicColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto&) { return a.isPublic; });
+			break;
+		case DwarfOffsetColumn:
+			std::sort(m_items.begin(), m_items.end(), [](const auto& a, const auto& b) { return a.dwarfOffset > b.dwarfOffset; });
+			break;
+		}
+	}
+
+	endResetModel();
 }
 
 QString VariablesModel::name(const QModelIndex& index) const
