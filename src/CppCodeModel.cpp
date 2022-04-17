@@ -873,7 +873,6 @@ void CppCodeModel::parseLocalVariable(DwarfEntry* entry, Cpp::Function& f)
 
 void CppCodeModel::parsePointerToMemberType(DwarfEntry* entry, Cpp::File& file)
 {
-	Output::write(Util::hexToString(entry->offset));
 	Cpp::PointerToMemberType& p = m_offsetToPointerToMemberTypeMap[entry->offset];
 
 	p.entry = entry;
@@ -1953,11 +1952,18 @@ void CppCodeModel::writeFunctionVariable(QString& code, Cpp::FunctionVariable& v
 
 void CppCodeModel::writeDeclaration(QString& code, Cpp::Declaration& d)
 {
-	writeTypePrefix(code, d.type);
+	bool isFunctionType = false;
+
+	writeTypePrefix(code, d.type, &isFunctionType);
 
 	if (!d.name.isEmpty())
 	{
-		code += QString(" %1").arg(d.name);
+		if (!isFunctionType)
+		{
+			code += " ";
+		}
+
+		code += d.name;
 	}
 
 	writeTypePostfix(code, d.type);
@@ -1965,21 +1971,33 @@ void CppCodeModel::writeDeclaration(QString& code, Cpp::Declaration& d)
 
 void CppCodeModel::writeTypedef(QString& code, Cpp::Typedef& t)
 {
+	bool isFunctionType = false;
+
 	writeKeyword(code, Cpp::Keyword::Typedef);
 	code += " ";
-	writeTypePrefix(code, t.type);
+	writeTypePrefix(code, t.type, &isFunctionType);
 
 	if (!t.name.isEmpty())
 	{
-		code += QString(" %1").arg(t.name);
+		if (!isFunctionType)
+		{
+			code += " ";
+		}
+
+		code += t.name;
 	}
 	
 	writeTypePostfix(code, t.type);
 	code += ";";
 }
 
-void CppCodeModel::writeTypePrefix(QString& code, Cpp::Type& t)
+void CppCodeModel::writeTypePrefix(QString& code, Cpp::Type& t, bool* outIsFunctionType)
 {
+	if (outIsFunctionType)
+	{
+		*outIsFunctionType = false;
+	}
+
 	if (t.isConst || t.isVolatile)
 	{
 		writeConstVolatile(code, t.isConst, t.isVolatile);
@@ -2013,11 +2031,30 @@ void CppCodeModel::writeTypePrefix(QString& code, Cpp::Type& t)
 				writeArrayTypePrefix(code, m_offsetToArrayTypeMap[userTypeEntry->offset]);
 				break;
 			case DW_TAG_subroutine_type:
+			{
 				writeFunctionTypePrefix(code, m_offsetToFunctionTypeMap[userTypeEntry->offset]);
+
+				if (outIsFunctionType)
+				{
+					*outIsFunctionType = true;
+				}
+
 				break;
+			}
 			case DW_TAG_ptr_to_member_type:
-				writePointerToMemberTypePrefix(code, m_offsetToPointerToMemberTypeMap[userTypeEntry->offset]);
+			{
+				Cpp::PointerToMemberType& p = m_offsetToPointerToMemberTypeMap[userTypeEntry->offset];
+				writePointerToMemberTypePrefix(code, p);
+
+				if (outIsFunctionType
+					&& !p.type.isFundamental
+					&& m_offsetToEntryMap[p.type.userTypeOffset]->tag == DW_TAG_subroutine_type)
+				{
+					*outIsFunctionType = true;
+				}
+
 				break;
+			}
 			}
 		}
 		else
@@ -2157,8 +2194,15 @@ void CppCodeModel::writeFunctionParameter(QString& code, Cpp::FunctionParameter&
 
 void CppCodeModel::writePointerToMemberTypePrefix(QString& code, Cpp::PointerToMemberType& p)
 {
-	writeTypePrefix(code, p.type);
-	code += " ";
+	bool isFunctionType = false;
+
+	writeTypePrefix(code, p.type, &isFunctionType);
+
+	if (!isFunctionType)
+	{
+		code += " ";
+	}
+	
 	writeTypePrefix(code, p.containingType);
 	code += "::*";
 }

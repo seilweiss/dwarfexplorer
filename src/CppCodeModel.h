@@ -292,7 +292,7 @@ private:
 	void writeFunctionVariable(QString& code, Cpp::FunctionVariable& v);
 	void writeDeclaration(QString& code, Cpp::Declaration& d);
 	void writeTypedef(QString& code, Cpp::Typedef& t);
-	void writeTypePrefix(QString& code, Cpp::Type& t);
+	void writeTypePrefix(QString& code, Cpp::Type& t, bool* outIsFunctionType = nullptr);
 	void writeTypePostfix(QString& code, Cpp::Type& t);
 	void writeClassTypePrefix(QString& code, Cpp::ClassType& c);
 	void writeClassTypePostfix(QString& code, Cpp::ClassType& c);
