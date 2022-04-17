@@ -14,8 +14,9 @@ static int s_warningCount = 0;
 
 CppCodeModelSettings CppCodeModel::s_defaultSettings
 {
-    true, // printUnknownEntries
-    true, // printUnknownAttributes
+    true, // warnUnknownEntries
+    true, // warnUnknownAttributes
+    true, // warnUnknownLineNumberFunctions
     true, // writeClassTypes
     true, // writeEnumTypes
     true, // writeArrayTypes
@@ -35,6 +36,7 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeFunctionAddresses
     true, // writeFunctionSizes
     true, // writeFunctionVariableLocations
+    true, // writeFunctionLineNumbers
     false, // sortTypesAlphabetically
     true, // inlineMetrowerksAnonymousTypes
     false, // hexadecimalEnumValues
@@ -83,6 +85,7 @@ CppCodeModel::CppCodeModel(QObject* parent)
     : AbstractCodeModel(parent)
     , m_pathToOffsetMultiMap()
     , m_offsetToEntryMap()
+    , m_offsetToSourceStatementTableMap()
     , m_offsetToFileMap()
     , m_offsetToClassTypeMap()
     , m_offsetToEnumTypeMap()
@@ -115,6 +118,7 @@ void CppCodeModel::clear()
 {
     m_pathToOffsetMultiMap.clear();
     m_offsetToEntryMap.clear();
+    m_offsetToSourceStatementTableMap.clear();
     m_offsetToFileMap.clear();
     m_offsetToClassTypeMap.clear();
     m_offsetToEnumTypeMap.clear();
@@ -138,6 +142,16 @@ void CppCodeModel::parseDwarf(Dwarf* dwarf)
     if (!dwarf)
     {
         return;
+    }
+
+    if (dwarf->sourceStatementTableCount > 0)
+    {
+        for (int i = 0; i < dwarf->sourceStatementTableCount; i++)
+        {
+            DwarfSourceStatementTable* table = &dwarf->sourceStatementTables[i];
+
+            m_offsetToSourceStatementTableMap[table->offset] = table;
+        }
     }
 
     if (dwarf->entryCount > 0)
@@ -182,7 +196,6 @@ void CppCodeModel::parseCompileUnit(DwarfEntry* entry)
     Cpp::File& file = m_offsetToFileMap[entry->offset];
 
     file.entry = entry;
-    file.path = entry->getName();
 
     for (DwarfEntry* child = entry->firstChild; child != nullptr; child = child->sibling)
     {
@@ -216,6 +229,39 @@ void CppCodeModel::parseCompileUnit(DwarfEntry* entry)
             break;
         default:
             warnUnknownEntry(child, entry);
+            break;
+        }
+    }
+
+    DwarfAttribute* typeAttribute = nullptr;
+
+    for (int i = 0; i < entry->attributeCount; i++)
+    {
+        DwarfAttribute* attr = &entry->attributes[i];
+
+        switch (attr->name)
+        {
+            // Name attribute
+        case DW_AT_name:
+            file.path = attr->string;
+            break;
+
+            // Statement list attribute
+        case DW_AT_stmt_list:
+            Q_ASSERT(m_offsetToSourceStatementTableMap.contains(attr->data4));
+            parseSourceStatementTable(m_offsetToSourceStatementTableMap[attr->data4], file);
+            break;
+
+            // Ignored attributes
+        case DW_AT_producer:
+        case DW_AT_language: // Can't ignore this in the future if we want to support more languages.
+        case DW_AT_low_pc:
+        case DW_AT_high_pc:
+            break;
+
+            // Unknown attribute
+        default:
+            warnUnknownAttribute(attr, entry);
             break;
         }
     }
@@ -1131,9 +1177,44 @@ void CppCodeModel::parseType(DwarfType& dt, Cpp::Type& t)
     }
 }
 
+void CppCodeModel::parseSourceStatementTable(DwarfSourceStatementTable* table, Cpp::File& file)
+{
+    for (int i = 0; i < table->entryCount; i++)
+    {
+        DwarfSourceStatementEntry* entry = &table->entries[i];
+        Cpp::Function* f = nullptr;
+
+        for (Elf32_Off offset : file.functionOffsets)
+        {
+            Cpp::Function& testFunction = m_offsetToFunctionMap[offset];
+
+            if (entry->address >= testFunction.startAddress
+                && entry->address <= testFunction.endAddress)
+            {
+                f = &testFunction;
+                break;
+            }
+        }
+
+        if (!f)
+        {
+            warnUnknownLineNumberFunction(entry, file);
+            continue;
+        }
+
+        Cpp::FunctionLineNumber l;
+        l.line = entry->lineNumber;
+        l.character = entry->lineCharacter;
+        l.address = entry->address;
+        l.isWholeLine = (entry->lineCharacter == DW_SOURCE_NO_POS);
+
+        f->lineNumbers.append(l);
+    }
+}
+
 void CppCodeModel::warnUnknownEntry(DwarfEntry* child, DwarfEntry* parent)
 {
-    if (!m_settings.printUnknownEntries)
+    if (!m_settings.warnUnknownEntries)
     {
         return;
     }
@@ -1154,7 +1235,7 @@ void CppCodeModel::warnUnknownEntry(DwarfEntry* child, DwarfEntry* parent)
     s_warningCount++;
 #endif
 
-    Output::write(tr("Unknown child entry %1 (%2) at offset %3 in parent entry %4 (%5)")
+    Output::write(tr("Warning: Unknown child entry %1 (%2) at offset %3 in parent entry %4 (%5)")
         .arg(Dwarf::tagToString(child->tag))
         .arg(child->getName())
         .arg(Util::hexToString(child->offset))
@@ -1164,7 +1245,7 @@ void CppCodeModel::warnUnknownEntry(DwarfEntry* child, DwarfEntry* parent)
 
 void CppCodeModel::warnUnknownAttribute(DwarfAttribute* attribute, DwarfEntry* entry)
 {
-    if (!m_settings.printUnknownAttributes)
+    if (!m_settings.warnUnknownAttributes)
     {
         return;
     }
@@ -1185,11 +1266,32 @@ void CppCodeModel::warnUnknownAttribute(DwarfAttribute* attribute, DwarfEntry* e
     s_warningCount++;
 #endif
 
-    Output::write(tr("Unknown attribute %1 at offset %2 in entry %3 (%4)")
+    Output::write(tr("Warning: Unknown attribute %1 at offset %2 in entry %3 (%4)")
         .arg(Dwarf::attrNameToString(attribute->name))
         .arg(Util::hexToString(attribute->offset))
         .arg(Dwarf::tagToString(entry->tag))
         .arg(entry->getName()));
+}
+
+void CppCodeModel::warnUnknownLineNumberFunction(DwarfSourceStatementEntry* entry, Cpp::File& file)
+{
+    if (!m_settings.warnUnknownLineNumberFunctions)
+    {
+        return;
+    }
+
+#ifdef MAX_WARNINGS_ACTIVE
+    if (s_warningCount >= MAX_WARNINGS)
+    {
+        return;
+    }
+
+    s_warningCount++;
+#endif
+
+    Output::write(tr("Warning: line number address %1 is not in any function in file %2")
+        .arg(Util::hexToString(entry->address))
+        .arg(file.path));
 }
 
 void CppCodeModel::writeDwarfEntry(QString& code, Elf32_Off offset)
@@ -1922,6 +2024,26 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
         writeFunctionVariable(code, v);
     }
 
+    if (m_settings.writeFunctionLineNumbers)
+    {
+        for (Cpp::FunctionLineNumber& l : f.lineNumbers)
+        {
+            QStringList comment;
+
+            comment += QString("Line: %1").arg(l.line);
+
+            if (!l.isWholeLine)
+            {
+                comment += QString("Character: %1").arg(l.character);
+            }
+
+            comment += QString("Address: %1").arg(Util::hexToString(l.address));
+
+            writeNewline(code);
+            writeComment(code, comment.join(", "));
+        }
+    }
+
     decreaseIndent();
 
     writeNewline(code);
@@ -2587,21 +2709,38 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
             requestRewrite();
         });
 
-    /* Output */
-    QMenu* outputMenu = menu->addMenu(tr("Output"));
-    action = outputMenu->addAction(tr("Unknown DWARF entries"));
+    action = commentsMenu->addAction(tr("Function line numbers"));
     action->setCheckable(true);
-    action->setChecked(m_settings.printUnknownEntries);
+    action->setChecked(m_settings.writeFunctionLineNumbers);
     connect(action, &QAction::triggered, this, [=]
         {
-            m_settings.printUnknownEntries = action->isChecked();
+            m_settings.writeFunctionLineNumbers = action->isChecked();
+            requestRewrite();
         });
 
-    action = outputMenu->addAction(tr("Unknown DWARF attributes"));
+    /* Warnings */
+    QMenu* warningsMenu = menu->addMenu(tr("Warnings"));
+    action = warningsMenu->addAction(tr("Unknown DWARF entries"));
     action->setCheckable(true);
-    action->setChecked(m_settings.printUnknownAttributes);
+    action->setChecked(m_settings.warnUnknownEntries);
     connect(action, &QAction::triggered, this, [=]
         {
-            m_settings.printUnknownAttributes = action->isChecked();
+            m_settings.warnUnknownEntries = action->isChecked();
+        });
+
+    action = warningsMenu->addAction(tr("Unknown DWARF attributes"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.warnUnknownAttributes);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.warnUnknownAttributes = action->isChecked();
+        });
+
+    action = warningsMenu->addAction(tr("Unknown line number functions"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.warnUnknownLineNumberFunctions);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.warnUnknownLineNumberFunctions = action->isChecked();
         });
 }

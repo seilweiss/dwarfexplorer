@@ -164,6 +164,14 @@ namespace Cpp
         QString location;
     };
 
+    struct FunctionLineNumber
+    {
+        bool isWholeLine;
+        int line;
+        int character;
+        Elf32_Addr address;
+    };
+
     struct Function : FunctionType
     {
         bool isGlobal;
@@ -175,6 +183,7 @@ namespace Cpp
         Cpp::Keyword memberAccess;
         QString mangledName;
         QList<FunctionVariable> variables;
+        QList<FunctionLineNumber> lineNumbers;
     };
 
     struct Variable : Declaration
@@ -196,8 +205,9 @@ namespace Cpp
 
 struct CppCodeModelSettings
 {
-    bool printUnknownEntries;
-    bool printUnknownAttributes;
+    bool warnUnknownEntries;
+    bool warnUnknownAttributes;
+    bool warnUnknownLineNumberFunctions;
     bool writeClassTypes;
     bool writeEnumTypes;
     bool writeArrayTypes;
@@ -217,6 +227,7 @@ struct CppCodeModelSettings
     bool writeFunctionAddresses;
     bool writeFunctionSizes;
     bool writeFunctionVariableLocations;
+    bool writeFunctionLineNumbers;
     bool sortTypesAlphabetically;
     bool inlineMetrowerksAnonymousTypes;
     bool hexadecimalEnumValues;
@@ -251,6 +262,7 @@ private:
     CppCodeModelSettings m_settings;
     QMultiMap<QString, Elf32_Off> m_pathToOffsetMultiMap;
     QHash<Elf32_Off, DwarfEntry*> m_offsetToEntryMap;
+    QHash<Elf32_Off, DwarfSourceStatementTable*> m_offsetToSourceStatementTableMap;
     QHash<Elf32_Off, Cpp::File> m_offsetToFileMap;
     QHash<Elf32_Off, Cpp::ClassType> m_offsetToClassTypeMap;
     QHash<Elf32_Off, Cpp::EnumType> m_offsetToEnumTypeMap;
@@ -278,9 +290,11 @@ private:
     void parseVariable(DwarfEntry* entry, Cpp::File& f);
     void parseTypedef(DwarfEntry* entry, Cpp::Typedef& t);
     void parseType(DwarfType& dt, Cpp::Type& t);
+    void parseSourceStatementTable(DwarfSourceStatementTable* table, Cpp::File& file);
 
     void warnUnknownEntry(DwarfEntry* child, DwarfEntry* parent);
     void warnUnknownAttribute(DwarfAttribute* attribute, DwarfEntry* entry);
+    void warnUnknownLineNumberFunction(DwarfSourceStatementEntry* entry, Cpp::File& file);
 
     void writeFiles(QString& code, const QList<Elf32_Off>& fileOffsets);
     void writeClassType(QString& code, Cpp::ClassType& c, bool isInline = false);

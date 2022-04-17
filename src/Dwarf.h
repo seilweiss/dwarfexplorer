@@ -196,6 +196,8 @@
 #define DW_FMT_UT_X_X 0x7
 #define DW_FMT_ET 0x8
 
+#define DW_SOURCE_NO_POS 0xffff
+
 struct DwarfEntry;
 
 struct DwarfAttribute
@@ -241,13 +243,36 @@ struct DwarfEntry
     const char* getName() const;
 };
 
+struct DwarfSourceStatementEntry
+{
+    Elf32_Word lineNumber;
+    Elf32_Half lineCharacter;
+    Elf32_Addr address;
+};
+
+struct DwarfSourceStatementTable
+{
+    Elf32_Off offset;
+    Elf32_Addr startAddress;
+    DwarfSourceStatementEntry* entries;
+    int entryCount;
+};
+
 struct Dwarf
 {
+private:
+    void* internalData;
+
+public:
     const Elf* elf;
     DwarfEntry* entries;
     int entryCount;
     DwarfAttribute* attributes;
     int attributeCount;
+    DwarfSourceStatementTable* sourceStatementTables;
+    int sourceStatementTableCount;
+    DwarfSourceStatementEntry* sourceStatementEntries;
+    int sourceStatementEntryCount;
 
     enum ReadResult
     {

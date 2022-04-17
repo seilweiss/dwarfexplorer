@@ -183,141 +183,271 @@ static void readEntry(const Elf* elf, char*& data, DwarfEntry*& entry, DwarfAttr
     entry++;
 }
 
+static void countSourceStatementEntry(const Elf* elf, char*& data, int& entryCount)
+{
+    // skip line number + line character + address delta
+    data += sizeof(Elf32_Word) + sizeof(Elf32_Half) + sizeof(Elf32_Word);
+    entryCount++;
+}
+
+static void countSourceStatementTable(const Elf* elf, char*& data, int& tableCount, int& entryCount)
+{
+    char* start = data;
+    Elf32_Word length = elf->read<Elf32_Word>(data);
+    char* end = start + length;
+    
+    // skip start address
+    data += sizeof(Elf32_Addr);
+
+    while (data < end)
+    {
+        countSourceStatementEntry(elf, data, entryCount);
+    }
+
+    tableCount++;
+}
+
+static void readSourceStatementEntry(const Elf* elf, char*& data, DwarfSourceStatementEntry*& entry)
+{
+    entry->lineNumber = elf->read<Elf32_Word>(data);
+    entry->lineCharacter = elf->read<Elf32_Half>(data);
+    entry->address = elf->read<Elf32_Addr>(data);
+    entry++;
+}
+
+static void readSourceStatementTable(const Elf* elf, char*& data, DwarfSourceStatementTable*& table, DwarfSourceStatementEntry*& entry)
+{
+    char* start = data;
+    Elf32_Word length = elf->read<Elf32_Word>(data);
+    char* end = start + length;
+
+    table->startAddress = elf->read<Elf32_Addr>(data);
+    table->entries = nullptr;
+    table->entryCount = 0;
+
+    if (data < end)
+    {
+        table->entries = entry;
+
+        while (data < end)
+        {
+            readSourceStatementEntry(elf, data, entry);
+            table->entryCount++;
+        }
+
+        for (int i = 0; i < table->entryCount; i++)
+        {
+            table->entries[i].address += table->startAddress;
+        }
+    }
+
+    table++;
+}
+
 Dwarf::ReadResult Dwarf::read(const Elf* elf)
 {
     destroy();
 
     this->elf = elf;
 
-    Elf32_Half index = elf->getSectionIndex(".debug");
+    Elf32_Half debugSectionIndex = elf->getSectionIndex(".debug");
 
-    if (index == SHN_UNDEF)
+    if (debugSectionIndex == SHN_UNDEF)
     {
         return ReadSectionNotFound;
     }
 
-    char* data = (char*)elf->getSectionData(index);
+    char* debugData = (char*)elf->getSectionData(debugSectionIndex);
 
-    if (!data)
+    if (!debugData)
     {
         return ReadSectionNotFound;
     }
 
-    char* dataStart = data;
-    char* dataEnd = data + elf->sectionHeaderTable[index].sh_size;
+    char* debugDataStart = debugData;
+    char* debugDataEnd = debugData + elf->sectionHeaderTable[debugSectionIndex].sh_size;
 
-    while (data < dataEnd)
+    while (debugData < debugDataEnd)
     {
-        countEntry(elf, data, entryCount, attributeCount);
+        countEntry(elf, debugData, entryCount, attributeCount);
     }
 
-    if (entryCount == 0 && attributeCount == 0)
+    Elf32_Half lineNumberTableSectionIndex = elf->getSectionIndex(".line");
+    char* lineNumberTableData = nullptr;
+
+    if (lineNumberTableSectionIndex != SHN_UNDEF)
+    {
+        lineNumberTableData = (char*)elf->getSectionData(lineNumberTableSectionIndex);
+    }
+
+    char* lineNumberTableDataStart = nullptr;
+    char* lineNumberTableDataEnd = nullptr; 
+
+    if (lineNumberTableData)
+    {
+        lineNumberTableDataStart = lineNumberTableData;
+        lineNumberTableDataEnd = lineNumberTableData + elf->sectionHeaderTable[lineNumberTableSectionIndex].sh_size;
+
+        while (lineNumberTableData < lineNumberTableDataEnd)
+        {
+            countSourceStatementTable(elf, lineNumberTableData, sourceStatementTableCount, sourceStatementEntryCount);
+        }
+    }
+
+    if (entryCount == 0
+        && attributeCount == 0
+        && sourceStatementTableCount == 0
+        && sourceStatementEntryCount == 0)
     {
         return ReadSuccess;
     }
 
-    void* buffer = malloc(entryCount * sizeof(DwarfEntry) + attributeCount * sizeof(DwarfAttribute));
+    internalData = malloc(
+        entryCount * sizeof(DwarfEntry)
+        + attributeCount * sizeof(DwarfAttribute)
+        + sourceStatementTableCount * sizeof(DwarfSourceStatementTable)
+        + sourceStatementEntryCount * sizeof(DwarfSourceStatementEntry));
 
-    entries = (DwarfEntry*)buffer;
+    entries = (DwarfEntry*)internalData;
     attributes = (DwarfAttribute*)(entries + entryCount);
+    sourceStatementTables = (DwarfSourceStatementTable*)(attributes + attributeCount);
+    sourceStatementEntries = (DwarfSourceStatementEntry*)(sourceStatementTables + sourceStatementTableCount);
 
-    data = dataStart;
-
-    DwarfEntry* entry = entries;
-    DwarfAttribute* attribute = attributes;
-
-    while (data < dataEnd)
+    if (entryCount == 0)
     {
-        entry->offset = (Elf32_Off)(data - dataStart);
-
-        readEntry(elf, data, entry, attribute);
+        entries = nullptr;
     }
 
-    for (int i = 0; i < entryCount - 1; i++)
+    if (attributeCount == 0)
     {
-        entry = &entries[i];
-        entry->sibling = nullptr;
-        entry->firstChild = nullptr;
+        attributes = nullptr;
+    }
 
-        if (!entry->isNull() && entry->tag != DW_TAG_padding)
+    if (sourceStatementTableCount == 0)
+    {
+        sourceStatementTables = nullptr;
+    }
+
+    if (sourceStatementEntryCount == 0)
+    {
+        sourceStatementEntries = nullptr;
+    }
+
+    if (entries)
+    {
+        debugData = debugDataStart;
+
+        DwarfEntry* entry = entries;
+        DwarfAttribute* attribute = attributes;
+
+        while (debugData < debugDataEnd)
         {
-            DwarfAttribute* siblingAttribute = entry->findAttribute(DW_AT_sibling);
+            entry->offset = (Elf32_Off)(debugData - debugDataStart);
 
-            if (siblingAttribute)
+            readEntry(elf, debugData, entry, attribute);
+        }
+
+        for (int i = 0; i < entryCount - 1; i++)
+        {
+            entry = &entries[i];
+            entry->sibling = nullptr;
+            entry->firstChild = nullptr;
+
+            if (!entry->isNull() && entry->tag != DW_TAG_padding)
             {
-                DwarfEntry* nextEntry = entry + 1;
+                DwarfAttribute* siblingAttribute = entry->findAttribute(DW_AT_sibling);
 
-                if (siblingAttribute->ref == nextEntry->offset)
+                if (siblingAttribute)
                 {
-                    entry->sibling = nextEntry;
-                }
-                else
-                {
-                    entry->firstChild = nextEntry;
+                    DwarfEntry* nextEntry = entry + 1;
 
-                    for (int j = i + 2; j < entryCount; j++)
+                    if (siblingAttribute->ref == nextEntry->offset)
                     {
-                        DwarfEntry* sibling = &entries[j];
+                        entry->sibling = nextEntry;
+                    }
+                    else
+                    {
+                        entry->firstChild = nextEntry;
 
-                        if (sibling->offset == siblingAttribute->ref)
+                        for (int j = i + 2; j < entryCount; j++)
                         {
-                            entry->sibling = sibling;
-                            break;
+                            DwarfEntry* sibling = &entries[j];
+
+                            if (sibling->offset == siblingAttribute->ref)
+                            {
+                                entry->sibling = sibling;
+                                break;
+                            }
                         }
                     }
                 }
             }
         }
-    }
 
-    entries[entryCount - 1].sibling = nullptr;
-    entries[entryCount - 1].siblingCount = 0;
-    entries[entryCount - 1].firstChild = nullptr;
-    entries[entryCount - 1].childCount = 0;
+        entries[entryCount - 1].sibling = nullptr;
+        entries[entryCount - 1].siblingCount = 0;
+        entries[entryCount - 1].firstChild = nullptr;
+        entries[entryCount - 1].childCount = 0;
 
-    for (int i = 0; i < entryCount - 1; i++)
-    {
-        entry = &entries[i];
-
-        DwarfEntry* child = entry->firstChild;
-
-        while (child)
+        for (int i = 0; i < entryCount - 1; i++)
         {
-            if (!child->sibling && child->tag == DW_TAG_padding)
-            {
-                DwarfEntry* nextEntry = child + 1;
+            entry = &entries[i];
 
-                if (nextEntry < entries + entryCount && nextEntry != entry->sibling)
+            DwarfEntry* child = entry->firstChild;
+
+            while (child)
+            {
+                if (!child->sibling && child->tag == DW_TAG_padding)
                 {
-                    child->sibling = nextEntry;
+                    DwarfEntry* nextEntry = child + 1;
+
+                    if (nextEntry < entries + entryCount && nextEntry != entry->sibling)
+                    {
+                        child->sibling = nextEntry;
+                    }
                 }
+
+                child = child->sibling;
+            }
+        }
+
+        /* TODO: optimize or get rid of this, it's slow */
+        for (int i = 0; i < entryCount - 1; i++)
+        {
+            entry = &entries[i];
+            entry->siblingCount = 0;
+            entry->childCount = 0;
+
+            DwarfEntry* sibling = entry->sibling;
+
+            while (sibling)
+            {
+                entry->siblingCount++;
+                sibling = sibling->sibling;
             }
 
-            child = child->sibling;
+            DwarfEntry* child = entry->firstChild;
+
+            while (child)
+            {
+                entry->childCount++;
+                child = child->sibling;
+            }
         }
     }
 
-    /* TODO: optimize or get rid of this, it's slow */
-    for (int i = 0; i < entryCount - 1; i++)
+    if (sourceStatementTables)
     {
-        entry = &entries[i];
-        entry->siblingCount = 0;
-        entry->childCount = 0;
+        lineNumberTableData = lineNumberTableDataStart;
 
-        DwarfEntry* sibling = entry->sibling;
+        DwarfSourceStatementTable* table = sourceStatementTables;
+        DwarfSourceStatementEntry* entry = sourceStatementEntries;
 
-        while (sibling)
+        while (lineNumberTableData < lineNumberTableDataEnd)
         {
-            entry->siblingCount++;
-            sibling = sibling->sibling;
-        }
+            table->offset = (Elf32_Off)(lineNumberTableData - lineNumberTableDataStart);
 
-        DwarfEntry* child = entry->firstChild;
-
-        while (child)
-        {
-            entry->childCount++;
-            child = child->sibling;
+            readSourceStatementTable(elf, lineNumberTableData, table, entry);
         }
     }
 
@@ -326,16 +456,19 @@ Dwarf::ReadResult Dwarf::read(const Elf* elf)
 
 void Dwarf::destroy()
 {
-    if (entries)
+    if (internalData)
     {
-        free(entries);
+        free(internalData);
     }
 
+    internalData = nullptr;
     elf = nullptr;
     entries = nullptr;
     entryCount = 0;
     attributes = nullptr;
     attributeCount = 0;
+    sourceStatementTables = nullptr;
+    sourceStatementTableCount = 0;
 }
 
 void Dwarf::readAttribute(char*& data, DwarfAttribute* attribute)

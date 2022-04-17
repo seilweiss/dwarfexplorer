@@ -161,8 +161,8 @@ void MainWindow::closeFile()
     m_functionsModel->setDwarf(nullptr);
     m_variablesModel->setDwarf(nullptr);
     m_typesModel->setDwarf(nullptr);
-    m_codeModel->setDwarf(nullptr);
     m_codeView->clear();
+    m_codeModel->setDwarf(nullptr);
 
     m_dwarf.destroy();
     m_elf.destroy();
