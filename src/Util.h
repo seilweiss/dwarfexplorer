@@ -4,5 +4,5 @@
 
 namespace Util
 {
-	QString hexToString(quint32 x);
+    QString hexToString(quint32 x);
 }

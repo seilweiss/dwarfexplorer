@@ -1,12 +1,12 @@
 #include "OutputView.h"
 
 OutputView::OutputView(QWidget* parent)
-	: QPlainTextEdit(parent)
+    : QPlainTextEdit(parent)
 {
-	setReadOnly(true);
+    setReadOnly(true);
 
-	QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-	font.setPointSize(10);
+    QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    font.setPointSize(10);
 
-	setFont(font);
+    setFont(font);
 }

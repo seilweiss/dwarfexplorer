@@ -9,26 +9,26 @@
 
 class VariablesView : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	VariablesView(QWidget* parent = nullptr);
+    VariablesView(QWidget* parent = nullptr);
 
-	VariablesModel* model() const;
-	void setModel(VariablesModel* model);
+    VariablesModel* model() const;
+    void setModel(VariablesModel* model);
 
 signals:
-	void variableSelected(Elf32_Off dwarfOffset);
-	void noneSelected();
+    void variableSelected(Elf32_Off dwarfOffset);
+    void noneSelected();
 
 private:
-	QTreeView* m_treeView;
-	QLineEdit* m_filterLineEdit;
-	VariablesModel* m_model;
+    QTreeView* m_treeView;
+    QLineEdit* m_filterLineEdit;
+    VariablesModel* m_model;
 
-	void updateFilter();
+    void updateFilter();
 
 private slots:
-	void currentChanged(const QModelIndex& current, const QModelIndex& previous);
-	void onFilterLineEditTextChanged(const QString& text);
+    void currentChanged(const QModelIndex& current, const QModelIndex& previous);
+    void onFilterLineEditTextChanged(const QString& text);
 };

@@ -9,28 +9,28 @@
 
 class TypesView : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	TypesView(QWidget* parent = nullptr);
+    TypesView(QWidget* parent = nullptr);
 
-	TypesModel* model() const;
-	void setModel(TypesModel* model);
+    TypesModel* model() const;
+    void setModel(TypesModel* model);
 
 signals:
-	void typeDefinitionSelected(Elf32_Off dwarfOffset);
-	void noneSelected();
+    void typeDefinitionSelected(Elf32_Off dwarfOffset);
+    void noneSelected();
 
 private:
-	QTreeView* m_treeView;
-	QLineEdit* m_filterLineEdit;
-	TypesModel* m_model;
+    QTreeView* m_treeView;
+    QLineEdit* m_filterLineEdit;
+    TypesModel* m_model;
 
-	void updateSpans();
-	void updateFilter();
+    void updateSpans();
+    void updateFilter();
 
 private slots:
-	void currentChanged(const QModelIndex& current, const QModelIndex& previous);
-	void onModelDwarfChanged(Dwarf* dwarf);
-	void onFilterLineEditTextChanged(const QString& text);
+    void currentChanged(const QModelIndex& current, const QModelIndex& previous);
+    void onModelDwarfChanged(Dwarf* dwarf);
+    void onFilterLineEditTextChanged(const QString& text);
 };

@@ -4,8 +4,8 @@
 
 class OutputView : public QPlainTextEdit
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	OutputView(QWidget* parent = nullptr);
+    OutputView(QWidget* parent = nullptr);
 };

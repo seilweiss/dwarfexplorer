@@ -8,23 +8,23 @@
 
 class DwarfView : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	DwarfView(QWidget* parent = nullptr);
+    DwarfView(QWidget* parent = nullptr);
 
-	DwarfModel* model() const;
-	void setModel(DwarfModel* model);
+    DwarfModel* model() const;
+    void setModel(DwarfModel* model);
 
 signals:
-	void entrySelected(DwarfEntry* entry);
-	void attributeSelected(DwarfAttribute* attribute);
-	void noneSelected();
+    void entrySelected(DwarfEntry* entry);
+    void attributeSelected(DwarfAttribute* attribute);
+    void noneSelected();
 
 private:
-	QTreeView* m_treeView;
-	DwarfModel* m_model;
+    QTreeView* m_treeView;
+    DwarfModel* m_model;
 
 private slots:
-	void currentChanged(const QModelIndex& current, const QModelIndex& previous);
+    void currentChanged(const QModelIndex& current, const QModelIndex& previous);
 };

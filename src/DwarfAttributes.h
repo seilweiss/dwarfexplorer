@@ -31,7 +31,7 @@ struct DwarfType
         Elf32_Half fundType;
         Elf32_Off udTypeOffset;
     };
-    
+
     std::vector<char> modifiers;
 
     void read(Dwarf* dwarf, DwarfAttribute* attribute);

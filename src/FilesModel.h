@@ -51,7 +51,7 @@ public:
 private:
     Dwarf* m_dwarf;
     FilesModelItem m_rootItem;
-    
+
     void clearItems();
     void refresh();
 };

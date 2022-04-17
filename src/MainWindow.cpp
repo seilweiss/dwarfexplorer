@@ -10,7 +10,7 @@
 
 MainWindow* MainWindow::s_mainWindow = nullptr;
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , m_path()
     , m_elf()
@@ -87,8 +87,8 @@ MainWindow::~MainWindow()
 void MainWindow::openFile()
 {
     QString path = QFileDialog::getOpenFileName(this, tr("Open File"), QString(),
-                                                "ELF file (*.axf *.bin *.elf *.o *.out *.prx *.puff *.ko *.mod *.so);;"
-                                                "All files (*.*)");
+        "ELF file (*.axf *.bin *.elf *.o *.out *.prx *.puff *.ko *.mod *.so);;"
+        "All files (*.*)");
 
     if (path.isNull())
     {

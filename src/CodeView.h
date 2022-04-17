@@ -11,29 +11,29 @@
 
 class CodeView : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	CodeView(QWidget* parent = nullptr);
+    CodeView(QWidget* parent = nullptr);
 
-	void clear();
+    void clear();
 
-	AbstractCodeModel* model() const;
-	void setModel(AbstractCodeModel* model);
+    AbstractCodeModel* model() const;
+    void setModel(AbstractCodeModel* model);
 
-	void viewDwarfEntry(Elf32_Off offset);
-	void viewFile(const QString& path);
+    void viewDwarfEntry(Elf32_Off offset);
+    void viewFile(const QString& path);
 
 private:
-	AbstractCodeModel* m_model;
-	QsciScintilla* m_editor;
-	QString m_code;
-	QLineEdit* m_pathLineEdit;
-	QPushButton* m_saveButton;
-	QPushButton* m_settingsButton;
+    AbstractCodeModel* m_model;
+    QsciScintilla* m_editor;
+    QString m_code;
+    QLineEdit* m_pathLineEdit;
+    QPushButton* m_saveButton;
+    QPushButton* m_settingsButton;
 
-	void refresh();
+    void refresh();
 
 private slots:
-	void onSaveButtonClicked();
+    void onSaveButtonClicked();
 };
