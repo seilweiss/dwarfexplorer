@@ -12,6 +12,19 @@ static DwarfModelItem* getSiblingItem(DwarfModelItem* item, int index)
     return item;
 }
 
+static int getSiblingCount(DwarfEntry* entry)
+{
+    int count = 0;
+
+    while (entry)
+    {
+        count++;
+        entry = entry->sibling;
+    }
+
+    return count;
+}
+
 DwarfModel::DwarfModel(QObject* parent)
     : QAbstractItemModel(parent)
     , m_dwarf(nullptr)
@@ -100,14 +113,14 @@ void DwarfModel::refresh()
             attributeItem->indexInParent = j;
         }
 
-        DwarfModelItem* childItem = entryItem->e.childItem;
+        int childIndex = 0;
 
-        for (int j = 0; j < entry->childCount; j++)
+        for (DwarfModelItem* childItem = entryItem->e.childItem; childItem != nullptr; childItem = childItem->e.siblingItem)
         {
             childItem->parentItem = entryItem;
-            childItem->indexInParent = j;
+            childItem->indexInParent = childIndex;
 
-            childItem = childItem->e.siblingItem;
+            childIndex++;
         }
     }
 
@@ -196,14 +209,14 @@ int DwarfModel::rowCount(const QModelIndex& parent) const
 
     if (!parent.isValid())
     {
-        return m_items[0].e.entry->siblingCount + 1;
+        return getSiblingCount(m_items[0].e.entry);
     }
 
     DwarfModelItem* parentItem = (DwarfModelItem*)parent.internalPointer();
 
     if (parentItem->type == DwarfModelItem::EntryItem)
     {
-        return parentItem->e.entry->attributeCount + parentItem->e.entry->childCount;
+        return parentItem->e.entry->attributeCount + getSiblingCount(parentItem->e.entry->firstChild);
     }
 
     return 0;

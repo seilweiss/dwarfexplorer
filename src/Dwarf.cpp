@@ -385,9 +385,7 @@ Dwarf::ReadResult Dwarf::read(const Elf* elf)
         }
 
         entries[entryCount - 1].sibling = nullptr;
-        entries[entryCount - 1].siblingCount = 0;
         entries[entryCount - 1].firstChild = nullptr;
-        entries[entryCount - 1].childCount = 0;
 
         for (int i = 0; i < entryCount - 1; i++)
         {
@@ -407,30 +405,6 @@ Dwarf::ReadResult Dwarf::read(const Elf* elf)
                     }
                 }
 
-                child = child->sibling;
-            }
-        }
-
-        /* TODO: optimize or get rid of this, it's slow */
-        for (int i = 0; i < entryCount - 1; i++)
-        {
-            entry = &entries[i];
-            entry->siblingCount = 0;
-            entry->childCount = 0;
-
-            DwarfEntry* sibling = entry->sibling;
-
-            while (sibling)
-            {
-                entry->siblingCount++;
-                sibling = sibling->sibling;
-            }
-
-            DwarfEntry* child = entry->firstChild;
-
-            while (child)
-            {
-                entry->childCount++;
                 child = child->sibling;
             }
         }

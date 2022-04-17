@@ -234,9 +234,7 @@ struct DwarfEntry
     DwarfAttribute* attributes;
     int attributeCount;
     DwarfEntry* sibling;
-    int siblingCount;
     DwarfEntry* firstChild;
-    int childCount;
 
     bool isNull() const { return length < 8; }
     DwarfAttribute* findAttribute(Elf32_Half name) const;
