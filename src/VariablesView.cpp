@@ -54,12 +54,24 @@ void VariablesView::setModel(VariablesModel* model)
 
 void VariablesView::updateFilter()
 {
-    int rowCount = m_model->rowCount(QModelIndex());
+    QModelIndex index;
+    int rowCount = m_model->rowCount(index);
+    QString filter = m_filterLineEdit->text();
 
-    for (int i = 0; i < rowCount; i++)
+    if (filter.isEmpty())
     {
-        QString name = m_model->name(m_model->index(i, 0));
-        m_treeView->setRowHidden(i, QModelIndex(), !name.contains(m_filterLineEdit->text(), Qt::CaseInsensitive));
+        for (int i = 0; i < rowCount; i++)
+        {
+            m_treeView->setRowHidden(i, index, false);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < rowCount; i++)
+        {
+            QString name = m_model->name(m_model->index(i, 0));
+            m_treeView->setRowHidden(i, index, !name.contains(filter, Qt::CaseInsensitive));
+        }
     }
 }
 
