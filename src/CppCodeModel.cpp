@@ -2162,6 +2162,12 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
         writeNewline(code);
     }
 
+    if (m_settings.writeDwarfEntryOffsets)
+    {
+        writeComment(code, QString("DWARF: %1").arg(Util::hexToString(f.entry->offset)));
+        writeNewline(code);
+    }
+
     if (m_settings.writeFunctionAddresses)
     {
         writeComment(code, QString("Address: %1").arg(Util::hexToString(f.startAddress)));
