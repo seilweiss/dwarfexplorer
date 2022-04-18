@@ -964,14 +964,6 @@ void CppCodeModel::parseSubroutine(DwarfEntry* entry, Cpp::File& file)
     }
 
     file.functionOffsets.append(entry->offset);
-
-    if (f.name.startsWith("__")
-        && f.name != "__ct"
-        && f.name != "__dt"
-        && !operatorDemangleMap.contains(f.name))
-    {
-        Output::write(QString("%1 %2").arg(f.name, f.mangledName));
-    }
 }
 
 void CppCodeModel::parseFormalParameter(DwarfEntry* entry, Cpp::FunctionType& f)
