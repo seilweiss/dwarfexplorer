@@ -1375,7 +1375,7 @@ void CppCodeModel::parseSourceStatementTable(DwarfSourceStatementTable* table, C
             Cpp::Function& testFunction = m_offsetToFunctionMap[offset];
 
             if (entry->address >= testFunction.startAddress
-                && entry->address <= testFunction.endAddress)
+                && entry->address < testFunction.endAddress)
             {
                 f = &testFunction;
                 break;
