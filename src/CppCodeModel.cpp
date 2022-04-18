@@ -87,6 +87,7 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeFunctionVariableLocations
     true, // writeFunctionLineNumbers
     false, // sortTypesAlphabetically
+    true, // sortFunctionsByLineNumber
     true, // inlineMetrowerksAnonymousTypes
     false, // hexadecimalEnumValues
     false, // forceExplicitEnumValues
@@ -194,6 +195,7 @@ void CppCodeModel::loadSettings()
     m_settings.writeFunctionVariableLocations = settings.value("cppcodemodel/writeFunctionVariableLocations", s_defaultSettings.writeFunctionVariableLocations).toBool();
     m_settings.writeFunctionLineNumbers = settings.value("cppcodemodel/writeFunctionLineNumbers", s_defaultSettings.writeFunctionLineNumbers).toBool();
     m_settings.sortTypesAlphabetically = settings.value("cppcodemodel/sortTypesAlphabetically", s_defaultSettings.sortTypesAlphabetically).toBool();
+    m_settings.sortFunctionsByLineNumber = settings.value("cppcodemodel/sortFunctionsByLineNumber", s_defaultSettings.sortFunctionsByLineNumber).toBool();
     m_settings.inlineMetrowerksAnonymousTypes = settings.value("cppcodemodel/inlineMetrowerksAnonymousTypes", s_defaultSettings.inlineMetrowerksAnonymousTypes).toBool();
     m_settings.hexadecimalEnumValues = settings.value("cppcodemodel/hexadecimalEnumValues", s_defaultSettings.hexadecimalEnumValues).toBool();
     m_settings.forceExplicitEnumValues = settings.value("cppcodemodel/forceExplicitEnumValues", s_defaultSettings.forceExplicitEnumValues).toBool();
@@ -245,6 +247,7 @@ void CppCodeModel::saveSettings()
     settings.setValue("cppcodemodel/writeFunctionVariableLocations", m_settings.writeFunctionVariableLocations);
     settings.setValue("cppcodemodel/writeFunctionLineNumbers", m_settings.writeFunctionLineNumbers);
     settings.setValue("cppcodemodel/sortTypesAlphabetically", m_settings.sortTypesAlphabetically);
+    settings.setValue("cppcodemodel/sortFunctionsByLineNumber", m_settings.sortFunctionsByLineNumber);
     settings.setValue("cppcodemodel/inlineMetrowerksAnonymousTypes", m_settings.inlineMetrowerksAnonymousTypes);
     settings.setValue("cppcodemodel/hexadecimalEnumValues", m_settings.hexadecimalEnumValues);
     settings.setValue("cppcodemodel/forceExplicitEnumValues", m_settings.forceExplicitEnumValues);
@@ -1670,35 +1673,51 @@ void CppCodeModel::writeFiles(QString& code, const QList<Elf32_Off>& fileOffsets
         writeNewline(code);
     }
 
-    if (m_settings.writeFunctionDeclarations)
+    if (m_settings.writeFunctionDeclarations
+        || m_settings.writeFunctionDefinitions)
     {
+        QList<Cpp::Function*> functions;
+
         for (Elf32_Off fileOffset : fileOffsets)
         {
             Cpp::File& file = m_offsetToFileMap[fileOffset];
 
             for (Elf32_Off functionOffset : file.functionOffsets)
             {
-                Cpp::Function& f = m_offsetToFunctionMap[functionOffset];
-
-                writeFunctionDeclaration(code, f);
-                writeNewline(code);
+                functions.append(&m_offsetToFunctionMap[functionOffset]);
             }
         }
 
-        writeNewline(code);
-    }
-
-    if (m_settings.writeFunctionDefinitions)
-    {
-        for (Elf32_Off fileOffset : fileOffsets)
+        if (m_settings.sortFunctionsByLineNumber)
         {
-            Cpp::File& file = m_offsetToFileMap[fileOffset];
+            std::sort(functions.begin(), functions.end(),
+                [](Cpp::Function* a, Cpp::Function* b)
+                {
+                    if (a->lineNumbers.isEmpty() || b->lineNumbers.isEmpty())
+                    {
+                        return false;
+                    }
 
-            for (Elf32_Off functionOffset : file.functionOffsets)
+                    return a->lineNumbers[0].line < b->lineNumbers[0].line;
+                });
+        }
+
+        if (m_settings.writeFunctionDeclarations)
+        {
+            for (Cpp::Function* f : functions)
             {
-                Cpp::Function& f = m_offsetToFunctionMap[functionOffset];
+                writeFunctionDeclaration(code, *f);
+                writeNewline(code);
+            }
 
-                writeFunctionDefinition(code, f);
+            writeNewline(code);
+        }
+
+        if (m_settings.writeFunctionDefinitions)
+        {
+            for (Cpp::Function* f : functions)
+            {
+                writeFunctionDefinition(code, *f);
                 writeNewline(code);
                 writeNewline(code);
             }
@@ -2901,6 +2920,16 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.sortTypesAlphabetically = action->isChecked();
+            saveSettings();
+            requestRewrite();
+        });
+
+    action = menu->addAction(tr("Sort functions by line number"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.sortFunctionsByLineNumber);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.sortFunctionsByLineNumber = action->isChecked();
             saveSettings();
             requestRewrite();
         });
