@@ -208,6 +208,7 @@ struct CppCodeModelSettings
     bool warnUnknownEntries;
     bool warnUnknownAttributes;
     bool warnUnknownLineNumberFunctions;
+    bool warnUnknownLocationConfigurations;
     bool writeClassTypes;
     bool writeEnumTypes;
     bool writeArrayTypes;
@@ -299,6 +300,7 @@ private:
     void warnUnknownEntry(DwarfEntry* child, DwarfEntry* parent);
     void warnUnknownAttribute(DwarfAttribute* attribute, DwarfEntry* entry);
     void warnUnknownLineNumberFunction(DwarfSourceStatementEntry* entry, Cpp::File& file);
+    void warnUnknownLocationConfiguration(DwarfAttribute* attribute, DwarfEntry* entry);
 
     void writeFiles(QString& code, const QList<Elf32_Off>& fileOffsets);
     void writeClassType(QString& code, Cpp::ClassType& c, bool isInline = false);
@@ -342,4 +344,7 @@ private:
     void resetIndent();
 
     bool typeCanBeInlined(const QString& name) const;
+
+    QString locationAtomToString(DwarfLocationAtom& atom);
+    QString locationToString(DwarfLocation& location);
 };

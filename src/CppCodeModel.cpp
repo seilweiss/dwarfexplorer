@@ -19,6 +19,7 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // warnUnknownEntries
     true, // warnUnknownAttributes
     true, // warnUnknownLineNumberFunctions
+    true, // warnUnknownLocationConfigurations
     true, // writeClassTypes
     true, // writeEnumTypes
     true, // writeArrayTypes
@@ -125,6 +126,7 @@ void CppCodeModel::loadSettings()
     m_settings.warnUnknownEntries = settings.value("cppcodemodel/warnUnknownEntries", s_defaultSettings.warnUnknownEntries).toBool();
     m_settings.warnUnknownAttributes = settings.value("cppcodemodel/warnUnknownAttributes", s_defaultSettings.warnUnknownAttributes).toBool();
     m_settings.warnUnknownLineNumberFunctions = settings.value("cppcodemodel/warnUnknownLineNumberFunctions", s_defaultSettings.warnUnknownLineNumberFunctions).toBool();
+    m_settings.warnUnknownLocationConfigurations = settings.value("cppcodemodel/warnUnknownLocationConfigurations", s_defaultSettings.warnUnknownLocationConfigurations).toBool();
     m_settings.writeClassTypes = settings.value("cppcodemodel/writeClassTypes", s_defaultSettings.writeClassTypes).toBool();
     m_settings.writeEnumTypes = settings.value("cppcodemodel/writeEnumTypes", s_defaultSettings.writeEnumTypes).toBool();
     m_settings.writeArrayTypes = settings.value("cppcodemodel/writeArrayTypes", s_defaultSettings.writeArrayTypes).toBool();
@@ -175,6 +177,7 @@ void CppCodeModel::saveSettings()
     settings.setValue("cppcodemodel/warnUnknownEntries", m_settings.warnUnknownEntries);
     settings.setValue("cppcodemodel/warnUnknownAttributes", m_settings.warnUnknownAttributes);
     settings.setValue("cppcodemodel/warnUnknownLineNumberFunctions", m_settings.warnUnknownLineNumberFunctions);
+    settings.setValue("cppcodemodel/warnUnknownLocationConfigurations", m_settings.warnUnknownLocationConfigurations);
     settings.setValue("cppcodemodel/writeClassTypes", m_settings.writeClassTypes);
     settings.setValue("cppcodemodel/writeEnumTypes", m_settings.writeEnumTypes);
     settings.setValue("cppcodemodel/writeArrayTypes", m_settings.writeArrayTypes);
@@ -978,14 +981,11 @@ void CppCodeModel::parseFormalParameter(DwarfEntry* entry, Cpp::FunctionType& f)
         DwarfLocation location;
         location.read(dwarf(), locationAttribute);
 
-        for (const DwarfLocationAtom& atom : location.atoms)
+        p.location = locationToString(location);
+
+        if (p.location.isEmpty())
         {
-            switch (atom.op)
-            {
-            case DW_OP_REG:
-                p.location = QString("r%1").arg(atom.number);
-                break;
-            }
+            warnUnknownLocationConfiguration(locationAttribute, entry);
         }
     }
 
@@ -1053,14 +1053,11 @@ void CppCodeModel::parseLocalVariable(DwarfEntry* entry, Cpp::Function& f)
         DwarfLocation location;
         location.read(dwarf(), locationAttribute);
 
-        for (const DwarfLocationAtom& atom : location.atoms)
+        v.location = locationToString(location);
+
+        if (v.location.isEmpty())
         {
-            switch (atom.op)
-            {
-            case DW_OP_REG:
-                v.location = QString("r%1").arg(atom.number);
-                break;
-            }
+            warnUnknownLocationConfiguration(locationAttribute, entry);
         }
     }
 
@@ -1432,9 +1429,31 @@ void CppCodeModel::warnUnknownLineNumberFunction(DwarfSourceStatementEntry* entr
     s_warningCount++;
 #endif
 
-    Output::write(tr("Warning: line number address %1 is not in any function in file %2")
+    Output::write(tr("Warning: Line number address %1 is not in any function in file %2")
         .arg(Util::hexToString(entry->address))
         .arg(file.path));
+}
+
+void CppCodeModel::warnUnknownLocationConfiguration(DwarfAttribute* attribute, DwarfEntry* entry)
+{
+    if (!m_settings.warnUnknownLocationConfigurations)
+    {
+        return;
+    }
+
+#ifdef MAX_WARNINGS_ACTIVE
+    if (s_warningCount >= MAX_WARNINGS)
+    {
+        return;
+    }
+
+    s_warningCount++;
+#endif
+
+    Output::write(tr("Warning: Unknown location configuration at offset %1 in entry %2 (%3)")
+        .arg(Util::hexToString(attribute->offset))
+        .arg(Dwarf::tagToString(entry->tag))
+        .arg(entry->getName()));
 }
 
 void CppCodeModel::writeDwarfEntry(QString& code, Elf32_Off offset)
@@ -2634,6 +2653,57 @@ bool CppCodeModel::typeCanBeInlined(const QString& name) const
     return false;
 }
 
+QString CppCodeModel::locationAtomToString(DwarfLocationAtom& atom)
+{
+    switch (atom.op)
+    {
+    case DW_OP_REG:
+    case DW_OP_BASEREG:
+        /* PowerPC (Gekko) */
+        if (atom.number < 32)
+        {
+            return QString("r%1").arg(atom.number);
+        }
+        else if (atom.number < 64)
+        {
+            return QString("f%1").arg(atom.number - 32);
+        }
+        break;
+    case DW_OP_ADDR:
+        return Util::hexToString(atom.addr);
+    case DW_OP_CONST:
+        return Util::hexToString(atom.number);
+    }
+
+    return QString();
+}
+
+QString CppCodeModel::locationToString(DwarfLocation& location)
+{
+    switch (location.atoms.size())
+    {
+    case 1:
+        return locationAtomToString(location.atoms[0]);
+    case 2:
+        if (location.atoms[0].op == DW_OP_CONST
+            && location.atoms[1].op == DW_OP_ADD)
+        {
+            return locationAtomToString(location.atoms[0]);
+        }
+    case 3:
+        if (location.atoms[0].op == DW_OP_BASEREG
+            && location.atoms[1].op == DW_OP_CONST
+            && location.atoms[2].op == DW_OP_ADD)
+        {
+            return QString("%1(%2)")
+                .arg(locationAtomToString(location.atoms[1]))
+                .arg(locationAtomToString(location.atoms[0]));
+        }
+    }
+
+    return QString();
+}
+
 QString CppCodeModel::dwarfEntryName(Elf32_Off offset) const
 {
     Q_ASSERT(m_offsetToEntryMap.contains(offset));
@@ -2928,6 +2998,15 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.warnUnknownLineNumberFunctions = action->isChecked();
+            saveSettings();
+        });
+
+    action = warningsMenu->addAction(tr("Unknown location configurations"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.warnUnknownLocationConfigurations);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.warnUnknownLocationConfigurations = action->isChecked();
             saveSettings();
         });
 }

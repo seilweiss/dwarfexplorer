@@ -1,6 +1,48 @@
 #include "DwarfModel.h"
 
 #include "Util.h"
+#include "DwarfAttributes.h"
+
+static QString locationToString(Dwarf* dwarf, DwarfAttribute* attribute)
+{
+    DwarfLocation location;
+    location.read(dwarf, attribute);
+
+    QStringList text;
+
+    for (DwarfLocationAtom& atom : location.atoms)
+    {
+        switch (atom.op)
+        {
+        case DW_OP_REG:
+            text += QString("OP_REG(%1)").arg(Util::hexToString(atom.number));
+            break;
+        case DW_OP_BASEREG:
+            text += QString("OP_BASEREG(%1)").arg(Util::hexToString(atom.number));
+            break;
+        case DW_OP_ADDR:
+            text += QString("OP_ADDR(%1)").arg(Util::hexToString(atom.addr));
+            break;
+        case DW_OP_CONST:
+            text += QString("OP_CONST(%1)").arg(Util::hexToString(atom.number));
+            break;
+        case DW_OP_DEREF2:
+            text += QString("OP_DEREF2");
+            break;
+        case DW_OP_DEREF:
+            text += QString("OP_DEREF");
+            break;
+        case DW_OP_ADD:
+            text += QString("OP_ADD");
+            break;
+        default:
+            text += QString("OP_<unknown %1>").arg(atom.op);
+            break;
+        }
+    }
+
+    return text.join(" ");
+}
 
 static DwarfModelItem* getSiblingItem(DwarfModelItem* item, int index)
 {
@@ -255,7 +297,7 @@ QVariant DwarfModel::data(const QModelIndex& index, int role) const
         case OffsetColumn:
             return Util::hexToString(entry->offset);
         case TagColumn:
-            return entry->isNull() ? QString() : Dwarf::tagToString(entry->tag);
+            return entry->isNull() ? tr("<null entry>") : Dwarf::tagToString(entry->tag);
         case NameDataColumn:
             return entry->getName();
         }
@@ -271,26 +313,26 @@ QVariant DwarfModel::data(const QModelIndex& index, int role) const
         case TagColumn:
             return Dwarf::attrNameToString(attribute->name);
         case NameDataColumn:
+            switch (attribute->name)
+            {
+            case DW_AT_location:
+                return locationToString(m_dwarf, attribute);
+            }
+
             switch (attribute->getForm())
             {
             case DW_FORM_ADDR:
                 return QString("0x%1").arg(attribute->addr, 8, 16, QLatin1Char('0'));
-                break;
             case DW_FORM_REF:
                 return QString("0x%1").arg(attribute->ref, 0, 16);
-                break;
             case DW_FORM_DATA2:
                 return QString("%1").arg(attribute->data2);
-                break;
             case DW_FORM_DATA4:
                 return QString("%1").arg(attribute->data4);
-                break;
             case DW_FORM_DATA8:
                 return QString("%1").arg(attribute->data8);
-                break;
             case DW_FORM_STRING:
                 return attribute->string;
-                break;
             default:
                 return QString();
             }
