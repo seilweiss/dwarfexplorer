@@ -2,6 +2,7 @@
 
 #include "Output.h"
 #include "Util.h"
+#include "CppFundamentalTypeNamesDialog.h"
 
 #include <qdir.h>
 #include <qsettings.h>
@@ -2643,6 +2644,21 @@ QString CppCodeModel::dwarfEntryName(Elf32_Off offset) const
 void CppCodeModel::setupSettingsMenu(QMenu* menu)
 {
     QAction* action;
+
+    action = menu->addAction(tr("Edit fundamental type names..."));
+    connect(action, &QAction::triggered, this, [=]
+        {
+            CppFundamentalTypeNamesDialog dialog;
+            dialog.setNames(m_settings.fundamentalTypeNames);
+            dialog.setDefaultNames(s_defaultSettings.fundamentalTypeNames);
+
+            if (dialog.exec() == QDialog::Accepted)
+            {
+                m_settings.fundamentalTypeNames = dialog.names();
+                saveSettings();
+                requestRewrite();
+            }
+        });
 
     action = menu->addAction(tr("Write classes/structs/unions"));
     action->setCheckable(true);

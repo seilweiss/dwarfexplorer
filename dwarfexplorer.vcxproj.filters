@@ -93,6 +93,9 @@
     <ClCompile Include="src\VariablesView.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\CppFundamentalTypeNamesDialog.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Dwarf.h">
@@ -166,6 +169,9 @@
       <Filter>Generated Files</Filter>
     </QtMoc>
     <QtMoc Include="src\VariablesView.h">
+      <Filter>Generated Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\CppFundamentalTypeNamesDialog.h">
       <Filter>Generated Files</Filter>
     </QtMoc>
   </ItemGroup>
