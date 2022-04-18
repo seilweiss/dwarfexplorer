@@ -14,6 +14,52 @@
 static int s_warningCount = 0;
 #endif
 
+static const QMap<QString, QString> operatorDemangleMap =
+{
+    { "__as", "operator=" },
+    { "__nw", "operator new" },
+    { "__dl", "operator delete" },
+    { "__nwa", "operator new[]" },
+    { "__dla", "operator delete[]" },
+    { "__pl", "operator+" },
+    { "__mi", "operator-" },
+    { "__ml", "operator*" },
+    { "__dv", "operator/" },
+    { "__md", "operator%" },
+    { "__er", "operator^" },
+    { "__ad", "operator&" },
+    { "__or", "operator|" },
+    { "__co", "operator~" },
+    { "__nt", "operator!" },
+    { "__lt", "operator<" },
+    { "__gt", "operator>" },
+    { "__apl", "operator+=" },
+    { "__ami", "operator-=" },
+    { "__amu", "operator*=" },
+    { "__adv", "operator/=" },
+    { "__amd", "operator%=" },
+    { "__aer", "operator^=" },
+    { "__aad", "operator&=" },
+    { "__aor", "operator|=" },
+    { "__ls", "operator<<" },
+    { "__rs", "operator>>" },
+    { "__als", "operator<<=" },
+    { "__ars", "operator>>=" },
+    { "__eq", "operator==" },
+    { "__ne", "operator!=" },
+    { "__le", "operator<=" },
+    { "__ge", "operator>=" },
+    { "__aa", "operator&&" },
+    { "__oo", "operator||" },
+    { "__pp", "operator++" },
+    { "__mm", "operator--" },
+    { "__cm", "operator," },
+    { "__rm", "operator->*" },
+    { "__rf", "operator*" },
+    { "__cl", "operator()" },
+    { "__vc", "operator[]" },
+};
+
 CppCodeModelSettings CppCodeModel::s_defaultSettings
 {
     true, // warnUnknownEntries
@@ -918,6 +964,14 @@ void CppCodeModel::parseSubroutine(DwarfEntry* entry, Cpp::File& file)
     }
 
     file.functionOffsets.append(entry->offset);
+
+    if (f.name.startsWith("__")
+        && f.name != "__ct"
+        && f.name != "__dt"
+        && !operatorDemangleMap.contains(f.name))
+    {
+        Output::write(QString("%1 %2").arg(f.name, f.mangledName));
+    }
 }
 
 void CppCodeModel::parseFormalParameter(DwarfEntry* entry, Cpp::FunctionType& f)
@@ -2224,6 +2278,7 @@ void CppCodeModel::writeFunctionSignature(QString& code, Cpp::Function& f, bool 
 {
     bool isNonStaticMemberFunction = false;
     bool isConstMemberFunction = false;
+    bool isConstructorOrDestructor = false;
 
     if (f.isMember
         && !f.parameters.empty()
@@ -2235,6 +2290,11 @@ void CppCodeModel::writeFunctionSignature(QString& code, Cpp::Function& f, bool 
         {
             isConstMemberFunction = true;
         }
+    }
+
+    if (f.name == "__ct" || f.name == "__dt")
+    {
+        isConstructorOrDestructor = true;
     }
 
     if ((!f.isMember && !f.isGlobal)
@@ -2250,20 +2310,47 @@ void CppCodeModel::writeFunctionSignature(QString& code, Cpp::Function& f, bool 
         code += " ";
     }
 
-    writeTypePrefix(code, f.type);
-    writeTypePostfix(code, f.type);
-    code += " ";
+    if (!isConstructorOrDestructor)
+    {
+        writeTypePrefix(code, f.type);
+        writeTypePostfix(code, f.type);
+        code += " ";
+    }
 
-    if (f.isMember && !isInsideClass)
+    QString name = f.name;
+
+    if (f.isMember)
     {
         Q_ASSERT(m_offsetToClassTypeMap.contains(f.memberTypeOffset));
 
         Cpp::ClassType& c = m_offsetToClassTypeMap[f.memberTypeOffset];
 
-        code += QString("%1::").arg(c.name);
+        if (!isInsideClass)
+        {
+            code += QString("%1::").arg(c.name);
+        }
+        
+        if (isConstructorOrDestructor)
+        {
+            if (f.name == "__ct")
+            {
+                name = c.name;
+            }
+            else if (f.name == "__dt")
+            {
+                name = QString("~%1").arg(c.name);
+            }
+        }
     }
 
-    code += f.name;
+    if (!isConstructorOrDestructor
+        && f.name.startsWith("__")
+        && operatorDemangleMap.contains(f.name))
+    {
+        name = operatorDemangleMap[f.name];
+    }
+
+    code += name;
     writeFunctionParameters(code, f, isDeclaration);
 
     if (isConstMemberFunction)
