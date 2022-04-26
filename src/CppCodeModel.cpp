@@ -1549,6 +1549,9 @@ void CppCodeModel::writeDwarfEntry(QString& code, Elf32_Off offset)
     case DW_TAG_subroutine:
     case DW_TAG_global_subroutine:
     case DW_TAG_inlined_subroutine:
+        writeFunctionDeclaration(code, m_offsetToFunctionMap[offset]);
+        writeNewline(code);
+        writeNewline(code);
         writeFunctionDefinition(code, m_offsetToFunctionMap[offset]);
         break;
     }
