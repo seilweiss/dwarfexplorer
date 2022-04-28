@@ -213,6 +213,7 @@ struct Elf
     void* getSectionData(Elf32_Half index) const;
     void* getSectionData(const char* name) const;
     Elf32_Half getSectionIndex(const char* name) const;
+    void* getAddressData(Elf32_Addr addr) const;
 
     template <class T> void toNativeEndian(T* x) const
     {

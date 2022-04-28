@@ -228,6 +228,7 @@ struct CppCodeModelSettings
     bool writeFunctionAddresses;
     bool writeFunctionSizes;
     bool writeFunctionVariableLocations;
+    bool writeFunctionDisassembly;
     bool writeFunctionLineNumbers;
     bool sortTypesAlphabetically;
     bool sortFunctionsByLineNumber;
@@ -314,6 +315,8 @@ private:
     void writeVariable(QString& code, Cpp::Variable& v);
     void writeFunctionDeclaration(QString& code, Cpp::Function& f, bool isInsideClass = false);
     void writeFunctionDefinition(QString& code, Cpp::Function& f);
+    void writeDisassemblyLineComment(QString& code, const QString& leftText, const QString& rightText, int leftSize, int rightSize);
+    void writeFunctionLineNumberComment(QString& code, Cpp::FunctionLineNumber& l);
     void writeFunctionSignature(QString& code, Cpp::Function& f, bool isDeclaration, bool isInsideClass);
     void writeFunctionVariable(QString& code, Cpp::FunctionVariable& v);
     void writeDeclaration(QString& code, Cpp::Declaration& d);

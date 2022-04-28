@@ -196,3 +196,19 @@ Elf32_Half Elf::getSectionIndex(const char* name) const
 
     return SHN_UNDEF;
 }
+
+
+void* Elf::getAddressData(Elf32_Addr addr) const
+{
+    for (Elf32_Half i = 0; i < header->e_phnum; i++)
+    {
+        Elf32_Phdr* phdr = &programHeaderTable[i];
+
+        if (phdr->p_vaddr <= addr && phdr->p_vaddr + phdr->p_memsz > addr)
+        {
+            return offsetToPointer(phdr->p_offset + (addr - phdr->p_vaddr));
+        }
+    }
+
+    return nullptr;
+}

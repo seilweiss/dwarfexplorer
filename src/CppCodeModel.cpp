@@ -3,6 +3,7 @@
 #include "Output.h"
 #include "Util.h"
 #include "CppFundamentalTypeNamesDialog.h"
+#include "Disassemblers.h"
 
 #include <qdir.h>
 #include <qsettings.h>
@@ -85,6 +86,7 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeFunctionAddresses
     true, // writeFunctionSizes
     true, // writeFunctionVariableLocations
+    true, // writeFunctionDisassembly
     true, // writeFunctionLineNumbers
     false, // sortTypesAlphabetically
     true, // sortFunctionsByLineNumber
@@ -193,6 +195,7 @@ void CppCodeModel::loadSettings()
     m_settings.writeFunctionAddresses = settings.value("cppcodemodel/writeFunctionAddresses", s_defaultSettings.writeFunctionAddresses).toBool();
     m_settings.writeFunctionSizes = settings.value("cppcodemodel/writeFunctionSizes", s_defaultSettings.writeFunctionSizes).toBool();
     m_settings.writeFunctionVariableLocations = settings.value("cppcodemodel/writeFunctionVariableLocations", s_defaultSettings.writeFunctionVariableLocations).toBool();
+    m_settings.writeFunctionDisassembly = settings.value("cppcodemodel/writeFunctionDisassembly", s_defaultSettings.writeFunctionDisassembly).toBool();
     m_settings.writeFunctionLineNumbers = settings.value("cppcodemodel/writeFunctionLineNumbers", s_defaultSettings.writeFunctionLineNumbers).toBool();
     m_settings.sortTypesAlphabetically = settings.value("cppcodemodel/sortTypesAlphabetically", s_defaultSettings.sortTypesAlphabetically).toBool();
     m_settings.sortFunctionsByLineNumber = settings.value("cppcodemodel/sortFunctionsByLineNumber", s_defaultSettings.sortFunctionsByLineNumber).toBool();
@@ -245,6 +248,7 @@ void CppCodeModel::saveSettings()
     settings.setValue("cppcodemodel/writeFunctionAddresses", m_settings.writeFunctionAddresses);
     settings.setValue("cppcodemodel/writeFunctionSizes", m_settings.writeFunctionSizes);
     settings.setValue("cppcodemodel/writeFunctionVariableLocations", m_settings.writeFunctionVariableLocations);
+    settings.setValue("cppcodemodel/writeFunctionDisassembly", m_settings.writeFunctionDisassembly);
     settings.setValue("cppcodemodel/writeFunctionLineNumbers", m_settings.writeFunctionLineNumbers);
     settings.setValue("cppcodemodel/sortTypesAlphabetically", m_settings.sortTypesAlphabetically);
     settings.setValue("cppcodemodel/sortFunctionsByLineNumber", m_settings.sortFunctionsByLineNumber);
@@ -2260,25 +2264,63 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
         writeFunctionVariable(code, v);
     }
 
-    if (!f.lineNumbers.isEmpty() && m_settings.writeFunctionLineNumbers)
+    if (m_settings.writeFunctionDisassembly)
+    {
+        Disassembly disasm;
+
+        if (Disassemblers::disassemble(disasm, dwarf()->elf, f.startAddress, f.endAddress))
+        {
+            writeNewline(code);
+
+            int leftSize = 0;
+            int rightSize = 0;
+
+            for (int line = 0; line < disasm.lineCount(); line++)
+            {
+                leftSize = qMax(leftSize, disasm.leftText(line).size());
+                rightSize = qMax(rightSize, disasm.rightText(line).size());
+            }
+
+            leftSize += 4;
+            rightSize += 1;
+
+            if (!f.lineNumbers.isEmpty() && m_settings.writeFunctionLineNumbers)
+            {
+                int lineNumberIndex = 0;
+
+                for (int line = 0; line < disasm.lineCount(); line++)
+                {
+                    writeNewline(code);
+                    writeDisassemblyLineComment(code, disasm.leftText(line), disasm.rightText(line), leftSize, rightSize);
+
+                    if (lineNumberIndex < f.lineNumbers.size()
+                        && f.lineNumbers[lineNumberIndex].address == disasm.address(line))
+                    {
+                        writeFunctionLineNumberComment(code, f.lineNumbers[lineNumberIndex]);
+                        lineNumberIndex++;
+                    }
+                }
+            }
+            else
+            {
+                for (int line = 0; line < disasm.lineCount(); line++)
+                {
+                    writeNewline(code);
+                    writeDisassemblyLineComment(code, disasm.leftText(line), disasm.rightText(line), leftSize, rightSize);
+                }
+            }
+
+            writeNewline(code);
+        }
+    }
+    else if (!f.lineNumbers.isEmpty() && m_settings.writeFunctionLineNumbers)
     {
         writeNewline(code);
 
         for (Cpp::FunctionLineNumber& l : f.lineNumbers)
         {
-            QStringList comment;
-
-            comment += QString("Line: %1").arg(l.line);
-
-            if (!l.isWholeLine)
-            {
-                comment += QString("Character: %1").arg(l.character);
-            }
-
-            comment += QString("Address: %1").arg(Util::hexToString(l.address));
-
             writeNewline(code);
-            writeComment(code, comment.join(", "));
+            writeFunctionLineNumberComment(code, l);
         }
     }
 
@@ -2286,6 +2328,27 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
 
     writeNewline(code);
     code += "}";
+}
+
+void CppCodeModel::writeDisassemblyLineComment(QString& code, const QString& leftText, const QString& rightText, int leftSize, int rightSize)
+{
+    code += QString("// %1%2").arg(leftText, -leftSize, ' ').arg(rightText, -rightSize, ' ');
+}
+
+void CppCodeModel::writeFunctionLineNumberComment(QString& code, Cpp::FunctionLineNumber& l)
+{
+    QStringList comment;
+
+    comment += QString("Line: %1").arg(l.line);
+
+    if (!l.isWholeLine)
+    {
+        comment += QString("Character: %1").arg(l.character);
+    }
+
+    comment += QString("Address: %1").arg(Util::hexToString(l.address));
+
+    writeComment(code, comment.join(", "));
 }
 
 void CppCodeModel::writeFunctionSignature(QString& code, Cpp::Function& f, bool isDeclaration, bool isInsideClass)
@@ -3075,6 +3138,16 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     connect(action, &QAction::triggered, this, [=]
         {
             m_settings.writeFunctionVariableLocations = action->isChecked();
+            saveSettings();
+            requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Function disassembly"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeFunctionDisassembly);
+    connect(action, &QAction::triggered, this, [=]
+        {
+            m_settings.writeFunctionDisassembly = action->isChecked();
             saveSettings();
             requestRewrite();
         });

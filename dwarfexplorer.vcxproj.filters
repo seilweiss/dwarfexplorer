@@ -96,6 +96,23 @@
     <ClCompile Include="src\CppFundamentalTypeNamesDialog.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\AbstractDisassembler.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Disassembly.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PPCDisassembler.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Disassemblers.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dolphin\Source\Core\Common\GekkoDisassembler.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dolphin\Externals\fmt\src\format.cc" />
+    <ClCompile Include="dolphin\Externals\fmt\src\os.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Dwarf.h">
@@ -120,6 +137,57 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Icons.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Disassembly.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Disassemblers.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Source\Core\Common\CommonTypes.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Source\Core\Common\GekkoDisassembler.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\args.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\chrono.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\color.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\compile.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\core.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\format.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\format-inl.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\locale.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\os.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\ostream.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\printf.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\ranges.h">
+      <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dolphin\Externals\fmt\include\fmt\xchar.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -174,5 +242,14 @@
     <QtMoc Include="src\CppFundamentalTypeNamesDialog.h">
       <Filter>Generated Files</Filter>
     </QtMoc>
+    <QtMoc Include="src\AbstractDisassembler.h">
+      <Filter>Generated Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\PPCDisassembler.h">
+      <Filter>Generated Files</Filter>
+    </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dolphin\Externals\fmt\support\rtd\theme\layout.html" />
   </ItemGroup>
 </Project>
