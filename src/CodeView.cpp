@@ -23,10 +23,15 @@ CodeView::CodeView(QWidget* parent)
 {
     QsciLexer* lexer = new QsciLexerCPP(m_editor);
 
-    QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-    font.setPointSize(11);
+    QFont monospaceFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
 
-    lexer->setDefaultFont(font);
+    for (int style = 0; style <= QsciScintillaBase::STYLE_MAX; style++)
+    {
+        QFont font = lexer->font(style);
+        font.setFamily(monospaceFont.family());
+        font.setPointSize(11);
+        lexer->setFont(font, style);
+    }
 
     m_editor->setLexer(lexer);
     m_editor->setWrapMode(QsciScintilla::WrapWhitespace);
