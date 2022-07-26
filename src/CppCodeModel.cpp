@@ -964,6 +964,9 @@ void CppCodeModel::parseSubroutine(DwarfEntry* entry, Cpp::File& file)
         case DW_TAG_local_variable:
             parseLocalVariable(child, f);
             break;
+        case DW_TAG_lexical_block:
+            parseLexicalBlock(child, f);
+            break;
         default:
             warnUnknownEntry(child, entry);
             break;
@@ -1115,6 +1118,22 @@ void CppCodeModel::parseLocalVariable(DwarfEntry* entry, Cpp::Function& f)
     }
 
     f.variables.append(v);
+}
+
+void CppCodeModel::parseLexicalBlock(DwarfEntry* entry, Cpp::Function& f)
+{
+    for (DwarfEntry* child = entry->firstChild; child != nullptr; child = child->sibling)
+    {
+        switch (child->tag)
+        {
+        case DW_TAG_local_variable:
+            parseLocalVariable(child, f);
+            break;
+        default:
+            warnUnknownEntry(child, entry);
+            break;
+        }
+    }
 }
 
 void CppCodeModel::parsePointerToMemberType(DwarfEntry* entry, Cpp::File& file)

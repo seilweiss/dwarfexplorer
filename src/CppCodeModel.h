@@ -293,6 +293,7 @@ private:
     void parseSubroutine(DwarfEntry* entry, Cpp::File& file);
     void parseFormalParameter(DwarfEntry* entry, Cpp::FunctionType& f);
     void parseLocalVariable(DwarfEntry* entry, Cpp::Function& f);
+    void parseLexicalBlock(DwarfEntry* entry, Cpp::Function& f);
     void parsePointerToMemberType(DwarfEntry* entry, Cpp::File& file);
     void parseVariable(DwarfEntry* entry, Cpp::File& f);
     void parseTypedef(DwarfEntry* entry, Cpp::Typedef& t);
