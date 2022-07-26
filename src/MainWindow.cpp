@@ -7,6 +7,7 @@
 #include <qfiledialog.h>
 #include <qmessagebox.h>
 #include <qdockwidget.h>
+#include <qsettings.h>
 
 MainWindow* MainWindow::s_mainWindow = nullptr;
 
@@ -29,6 +30,10 @@ MainWindow::MainWindow(QWidget* parent)
     , m_codeModel(new CppCodeModel(this))
     , m_codeView(new CodeView(this))
     , m_outputView(new OutputView(this))
+    , m_fileMenu(nullptr)
+    , m_recentPaths()
+    , m_recentPathsSeparator(nullptr)
+    , m_recentPathActions()
 {
     s_mainWindow = this;
 
@@ -57,11 +62,14 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_variablesView, &VariablesView::noneSelected, this, &MainWindow::variablesNoneSelected);
     connect(m_typesView, &TypesView::typeDefinitionSelected, this, &MainWindow::typesTypeDefinitionSelected);
 
-    QMenu* fileMenu = menuBar()->addMenu(tr("File"));
-    fileMenu->addAction(tr("Open..."), this, &MainWindow::openFile);
-    fileMenu->addAction(tr("Close"), this, &MainWindow::closeFile);
-    fileMenu->addSeparator();
-    fileMenu->addAction(tr("Exit"), this, &QMainWindow::close);
+    m_fileMenu = menuBar()->addMenu(tr("File"));
+    m_fileMenu->addAction(tr("Open..."), this, QOverload<>::of(&MainWindow::openFile));
+    m_fileMenu->addAction(tr("Close"), this, &MainWindow::closeFile);
+    m_fileMenu->addSeparator();
+
+    m_recentPathsSeparator = m_fileMenu->addSeparator();
+
+    m_fileMenu->addAction(tr("Exit"), this, &QMainWindow::close);
 
     setCentralWidget(m_tabWidget);
 
@@ -78,6 +86,11 @@ MainWindow::MainWindow(QWidget* parent)
     resizeDocks({ codeViewDock }, { width() / 2 }, Qt::Horizontal);
 
     Output::setWriteCallback(outputWriteCallback);
+
+    loadSettings();
+    saveSettings();
+
+    updateFileMenu();
 }
 
 MainWindow::~MainWindow()
@@ -95,11 +108,14 @@ void MainWindow::openFile()
         return;
     }
 
+    openFile(path);
+}
+
+void MainWindow::openFile(const QString& path)
+{
     closeFile();
 
-    m_path = path;
-
-    Output::write(tr("Opening file %1").arg(m_path));
+    Output::write(tr("Opening file %1").arg(path));
 
     bool error = false;
     QString errorString;
@@ -144,16 +160,34 @@ void MainWindow::openFile()
         return;
     }
 
+    m_path = path;
+
     m_dwarfModel->setDwarf(&m_dwarf);
     m_filesModel->setDwarf(&m_dwarf);
     m_functionsModel->setDwarf(&m_dwarf);
     m_variablesModel->setDwarf(&m_dwarf);
     m_typesModel->setDwarf(&m_dwarf);
     m_codeModel->setDwarf(&m_dwarf);
+
+    m_recentPaths.removeAll(path);
+    m_recentPaths.prepend(path);
+
+    if (m_recentPaths.size() > 10)
+    {
+        m_recentPaths.resize(10);
+    }
+
+    saveSettings();
+    updateFileMenu();
 }
 
 void MainWindow::closeFile()
 {
+    if (m_path.isEmpty())
+    {
+        return;
+    }
+
     Output::write(tr("Closing file %1").arg(m_path));
 
     m_dwarfModel->setDwarf(nullptr);
@@ -220,4 +254,62 @@ void MainWindow::outputWriteCallback(const QString& text)
 {
     printf("%s\n", qPrintable(text));
     s_mainWindow->m_outputView->appendPlainText(text);
+}
+
+void MainWindow::loadSettings()
+{
+    m_recentPaths.clear();
+
+    QSettings settings;
+
+    int recentFilesCount = settings.beginReadArray("recentFiles");
+    m_recentPaths.reserve(recentFilesCount);
+
+    for (int i = 0; i < recentFilesCount; i++)
+    {
+        settings.setArrayIndex(i);
+        m_recentPaths.append(settings.value("path").toString());
+    }
+
+    settings.endArray();
+}
+
+void MainWindow::saveSettings()
+{
+    QSettings settings;
+
+    int recentFilesCount = m_recentPaths.size();
+    settings.beginWriteArray("recentFiles", recentFilesCount);
+
+    for (int i = 0; i < recentFilesCount; i++)
+    {
+        settings.setArrayIndex(i);
+        settings.setValue("path", m_recentPaths.at(i));
+    }
+
+    settings.endArray();
+}
+
+void MainWindow::updateFileMenu()
+{
+    qDeleteAll(m_recentPathActions);
+    m_recentPathActions.clear();
+
+    if (m_recentPaths.isEmpty())
+    {
+        m_recentPathsSeparator->setVisible(false);
+        return;
+    }
+    
+    m_recentPathsSeparator->setVisible(true);
+    
+    for (const QString& path : m_recentPaths)
+    {
+        QAction* action = new QAction(path);
+
+        connect(action, &QAction::triggered, this, [=] { openFile(path); });
+
+        m_fileMenu->insertAction(m_recentPathsSeparator, action);
+        m_recentPathActions.append(action);
+    }
 }

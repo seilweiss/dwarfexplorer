@@ -30,6 +30,7 @@ public:
 
 public slots:
     void openFile();
+    void openFile(const QString& path);
     void closeFile();
 
 private:
@@ -52,8 +53,17 @@ private:
     AbstractCodeModel* m_codeModel;
     CodeView* m_codeView;
     OutputView* m_outputView;
+    QMenu* m_fileMenu;
+    QStringList m_recentPaths;
+    QAction* m_recentPathsSeparator;
+    QList<QAction*> m_recentPathActions;
 
     static void outputWriteCallback(const QString& text);
+
+    void loadSettings();
+    void saveSettings();
+
+    void updateFileMenu();
 
 private slots:
     void dwarfEntrySelected(DwarfEntry* entry);
