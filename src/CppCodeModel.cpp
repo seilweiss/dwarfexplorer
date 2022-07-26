@@ -1431,6 +1431,12 @@ void CppCodeModel::warnUnknownEntry(DwarfEntry* child, DwarfEntry* parent)
         return;
     }
 
+    // Ignore null entries
+    if (child->isNull())
+    {
+        return;
+    }
+
     // Filter out some common entries
     switch (child->tag)
     {
