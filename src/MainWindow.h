@@ -20,6 +20,12 @@
 
 #include <qtabwidget.h>
 
+struct AppSettings
+{
+    bool openMostRecentFileOnStartup;
+    QStringList recentPaths;
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -35,6 +41,7 @@ public slots:
 
 private:
     static MainWindow* s_mainWindow;
+    static AppSettings s_defaultSettings;
 
     QString m_path;
     Elf m_elf;
@@ -54,9 +61,9 @@ private:
     CodeView* m_codeView;
     OutputView* m_outputView;
     QMenu* m_fileMenu;
-    QStringList m_recentPaths;
     QAction* m_recentPathsSeparator;
     QList<QAction*> m_recentPathActions;
+    AppSettings m_settings;
 
     static void outputWriteCallback(const QString& text);
 

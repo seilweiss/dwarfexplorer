@@ -11,6 +11,12 @@
 
 MainWindow* MainWindow::s_mainWindow = nullptr;
 
+AppSettings MainWindow::s_defaultSettings
+{
+    true, // openMostRecentFileOnStartup
+    {}, // recentPaths
+};
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , m_path()
@@ -31,11 +37,14 @@ MainWindow::MainWindow(QWidget* parent)
     , m_codeView(new CodeView(this))
     , m_outputView(new OutputView(this))
     , m_fileMenu(nullptr)
-    , m_recentPaths()
     , m_recentPathsSeparator(nullptr)
     , m_recentPathActions()
+    , m_settings()
 {
     s_mainWindow = this;
+
+    loadSettings();
+    saveSettings();
 
     resize(screen()->availableSize() * 0.5f);
 
@@ -71,6 +80,19 @@ MainWindow::MainWindow(QWidget* parent)
 
     m_fileMenu->addAction(tr("Exit"), this, &QMainWindow::close);
 
+    updateFileMenu();
+
+    QMenu* optionsMenu = menuBar()->addMenu(tr("Options"));
+    QAction* action;
+
+    action = optionsMenu->addAction(tr("Open most recent file on startup"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.openMostRecentFileOnStartup);
+    connect(action, &QAction::triggered, this, [=] {
+        m_settings.openMostRecentFileOnStartup = action->isChecked();
+        saveSettings();
+        });
+
     setCentralWidget(m_tabWidget);
 
     QDockWidget* codeViewDock = new QDockWidget(tr("Code"));
@@ -87,10 +109,10 @@ MainWindow::MainWindow(QWidget* parent)
 
     Output::setWriteCallback(outputWriteCallback);
 
-    loadSettings();
-    saveSettings();
-
-    updateFileMenu();
+    if (m_settings.openMostRecentFileOnStartup && !m_settings.recentPaths.isEmpty())
+    {
+        QTimer::singleShot(0, [=] { openFile(m_settings.recentPaths.first()); });
+    }
 }
 
 MainWindow::~MainWindow()
@@ -169,12 +191,12 @@ void MainWindow::openFile(const QString& path)
     m_typesModel->setDwarf(&m_dwarf);
     m_codeModel->setDwarf(&m_dwarf);
 
-    m_recentPaths.removeAll(path);
-    m_recentPaths.prepend(path);
+    m_settings.recentPaths.removeAll(path); // for some reason path contains a different string after this call despite being passed in as a const ref... (Qt bug?)
+    m_settings.recentPaths.prepend(m_path); // so we pass in m_path here
 
-    if (m_recentPaths.size() > 10)
+    if (m_settings.recentPaths.size() > 10)
     {
-        m_recentPaths.resize(10);
+        m_settings.recentPaths.resize(10);
     }
 
     saveSettings();
@@ -258,17 +280,19 @@ void MainWindow::outputWriteCallback(const QString& text)
 
 void MainWindow::loadSettings()
 {
-    m_recentPaths.clear();
+    m_settings.recentPaths.clear();
 
     QSettings settings;
 
+    m_settings.openMostRecentFileOnStartup = settings.value("settings/openMostRecentFileOnStartup", s_defaultSettings.openMostRecentFileOnStartup).toBool();
+
     int recentFilesCount = settings.beginReadArray("recentFiles");
-    m_recentPaths.reserve(recentFilesCount);
+    m_settings.recentPaths.reserve(recentFilesCount);
 
     for (int i = 0; i < recentFilesCount; i++)
     {
         settings.setArrayIndex(i);
-        m_recentPaths.append(settings.value("path").toString());
+        m_settings.recentPaths.append(settings.value("path").toString());
     }
 
     settings.endArray();
@@ -278,13 +302,15 @@ void MainWindow::saveSettings()
 {
     QSettings settings;
 
-    int recentFilesCount = m_recentPaths.size();
+    settings.setValue("settings/openMostRecentFileOnStartup", m_settings.openMostRecentFileOnStartup);
+
+    int recentFilesCount = m_settings.recentPaths.size();
     settings.beginWriteArray("recentFiles", recentFilesCount);
 
     for (int i = 0; i < recentFilesCount; i++)
     {
         settings.setArrayIndex(i);
-        settings.setValue("path", m_recentPaths.at(i));
+        settings.setValue("path", m_settings.recentPaths.at(i));
     }
 
     settings.endArray();
@@ -295,7 +321,7 @@ void MainWindow::updateFileMenu()
     qDeleteAll(m_recentPathActions);
     m_recentPathActions.clear();
 
-    if (m_recentPaths.isEmpty())
+    if (m_settings.recentPaths.isEmpty())
     {
         m_recentPathsSeparator->setVisible(false);
         return;
@@ -303,7 +329,7 @@ void MainWindow::updateFileMenu()
     
     m_recentPathsSeparator->setVisible(true);
     
-    for (const QString& path : m_recentPaths)
+    for (const QString& path : m_settings.recentPaths)
     {
         QAction* action = new QAction(path);
 
