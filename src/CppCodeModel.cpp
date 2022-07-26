@@ -1090,6 +1090,11 @@ void CppCodeModel::parseLocalVariable(DwarfEntry* entry, Cpp::Function& f)
             locationAttribute = attr;
             break;
 
+            // Metrowerks mangled name attribute
+        case DW_AT_MW_mangled:
+            v.mangledName = attr->string;
+            break;
+
             // Ignored attributes
         case DW_AT_MW_DWARF2_location:
             break;
@@ -2472,10 +2477,22 @@ void CppCodeModel::writeFunctionVariable(QString& code, Cpp::FunctionVariable& v
     writeDeclaration(code, v);
     code += ";";
 
+    QStringList comment;
+
+    if (m_settings.writeVariableMangledNames && !v.mangledName.isEmpty())
+    {
+        comment += v.mangledName;
+    }
+
     if (m_settings.writeFunctionVariableLocations)
     {
+        comment += v.location;
+    }
+
+    if (!comment.isEmpty())
+    {
         code += " ";
-        writeComment(code, v.location);
+        writeComment(code, comment.join(", "));
     }
 }
 

@@ -162,6 +162,7 @@ namespace Cpp
     struct FunctionVariable : Declaration
     {
         QString location;
+        QString mangledName;
     };
 
     struct FunctionLineNumber
