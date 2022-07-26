@@ -764,6 +764,10 @@ void CppCodeModel::parseArrayType(DwarfEntry* entry, Cpp::File& file)
             subscrDataAttribute = attr;
             break;
 
+            // Ignored attributes
+        case DW_AT_ordering:
+            break;
+
             // Unknown attribute
         default:
             warnUnknownAttribute(attr, entry);
@@ -936,6 +940,7 @@ void CppCodeModel::parseSubroutine(DwarfEntry* entry, Cpp::File& file)
 
             // Ignored attributes
         case DW_AT_MW_global_ref:
+        case DW_AT_MW_restore_SP:
         case DW_AT_return_addr:
             break;
 
