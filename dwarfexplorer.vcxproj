@@ -211,6 +211,7 @@
     <ClCompile Include="src\Output.cpp" />
     <ClCompile Include="src\OutputView.cpp" />
     <ClCompile Include="src\PPCDisassembler.cpp" />
+    <ClCompile Include="src\TreeView.cpp" />
     <ClCompile Include="src\TypesModel.cpp" />
     <ClCompile Include="src\TypesView.cpp" />
     <ClCompile Include="src\Util.cpp" />
@@ -242,6 +243,7 @@
     <ClInclude Include="src\Disassembly.h" />
     <ClInclude Include="src\Icons.h" />
     <QtMoc Include="src\PPCDisassembler.h" />
+    <QtMoc Include="src\TreeView.h" />
     <ClInclude Include="src\Util.h" />
     <QtMoc Include="src\DwarfView.h" />
     <QtMoc Include="src\FunctionsModel.h" />

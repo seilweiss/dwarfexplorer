@@ -113,6 +113,9 @@
     </ClCompile>
     <ClCompile Include="dolphin\Externals\fmt\src\format.cc" />
     <ClCompile Include="dolphin\Externals\fmt\src\os.cc" />
+    <ClCompile Include="src\TreeView.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Dwarf.h">
@@ -246,6 +249,9 @@
       <Filter>Generated Files</Filter>
     </QtMoc>
     <QtMoc Include="src\PPCDisassembler.h">
+      <Filter>Generated Files</Filter>
+    </QtMoc>
+    <QtMoc Include="src\TreeView.h">
       <Filter>Generated Files</Filter>
     </QtMoc>
   </ItemGroup>

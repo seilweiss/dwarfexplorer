@@ -3,8 +3,8 @@
 #include <qwidget.h>
 
 #include "FilesModel.h"
+#include "TreeView.h"
 
-#include <qtreeview.h>
 #include <qlineedit.h>
 
 class FilesView : public QWidget
@@ -23,7 +23,7 @@ signals:
     void noneSelected();
 
 private:
-    QTreeView* m_treeView;
+    TreeView* m_treeView;
     QLineEdit* m_filterLineEdit;
     FilesModel* m_model;
 

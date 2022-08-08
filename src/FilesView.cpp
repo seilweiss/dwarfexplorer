@@ -5,7 +5,7 @@
 
 FilesView::FilesView(QWidget* parent)
     : QWidget(parent)
-    , m_treeView(new QTreeView)
+    , m_treeView(new TreeView)
     , m_filterLineEdit(new QLineEdit)
     , m_model(nullptr)
 {

@@ -3,8 +3,8 @@
 #include <qwidget.h>
 
 #include "VariablesModel.h"
+#include "TreeView.h"
 
-#include <qtreeview.h>
 #include <qlineedit.h>
 
 class VariablesView : public QWidget
@@ -22,7 +22,7 @@ signals:
     void noneSelected();
 
 private:
-    QTreeView* m_treeView;
+    TreeView* m_treeView;
     QLineEdit* m_filterLineEdit;
     VariablesModel* m_model;
 

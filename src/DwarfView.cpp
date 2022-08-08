@@ -5,7 +5,7 @@
 
 DwarfView::DwarfView(QWidget* parent)
     : QWidget(parent)
-    , m_treeView(new QTreeView)
+    , m_treeView(new TreeView)
     , m_model(nullptr)
 {
     QVBoxLayout* mainLayout = new QVBoxLayout;

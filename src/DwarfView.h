@@ -3,8 +3,7 @@
 #include <qwidget.h>
 
 #include "DwarfModel.h"
-
-#include <qtreeview.h>
+#include "TreeView.h"
 
 class DwarfView : public QWidget
 {
@@ -22,7 +21,7 @@ signals:
     void noneSelected();
 
 private:
-    QTreeView* m_treeView;
+    TreeView* m_treeView;
     DwarfModel* m_model;
 
 private slots:
