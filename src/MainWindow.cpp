@@ -43,6 +43,8 @@ MainWindow::MainWindow(QWidget* parent)
 {
     s_mainWindow = this;
 
+    updateWindowTitle();
+
     loadSettings();
     saveSettings();
 
@@ -200,6 +202,7 @@ void MainWindow::openFile(const QString& path)
     }
 
     saveSettings();
+    updateWindowTitle();
     updateFileMenu();
 }
 
@@ -224,6 +227,8 @@ void MainWindow::closeFile()
     m_elf.destroy();
 
     m_path = QString();
+
+    updateWindowTitle();
 }
 
 void MainWindow::dwarfEntrySelected(DwarfEntry* entry)
@@ -314,6 +319,18 @@ void MainWindow::saveSettings()
     }
 
     settings.endArray();
+}
+
+void MainWindow::updateWindowTitle()
+{
+    QString title = "DWARF Explorer";
+
+    if (!m_path.isEmpty())
+    {
+        title.prepend(QString("%1 - ").arg(QFileInfo(m_path).fileName()));
+    }
+
+    setWindowTitle(title);
 }
 
 void MainWindow::updateFileMenu()

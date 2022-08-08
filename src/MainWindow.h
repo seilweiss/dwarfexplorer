@@ -70,6 +70,7 @@ private:
     void loadSettings();
     void saveSettings();
 
+    void updateWindowTitle();
     void updateFileMenu();
 
 private slots:
