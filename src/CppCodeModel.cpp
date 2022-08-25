@@ -1853,15 +1853,15 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
         empty = false;
     }
 
+    Cpp::Keyword prevAccess = Cpp::Keyword::Invalid;
+
     if (!c.members.empty())
     {
-        Cpp::Keyword prevAccess;
-
         switch (c.keyword)
         {
         case Cpp::Keyword::Class:
         {
-            prevAccess = (Cpp::Keyword)-1;
+            prevAccess = Cpp::Keyword::Invalid;
             break;
         }
         case Cpp::Keyword::Struct:
@@ -1872,7 +1872,7 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
             {
                 if (m.access != Cpp::Keyword::Public)
                 {
-                    prevAccess = (Cpp::Keyword)-1;
+                    prevAccess = Cpp::Keyword::Invalid;
                     break;
                 }
             }
@@ -1882,11 +1882,6 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
         case Cpp::Keyword::Union:
         {
             prevAccess = Cpp::Keyword::Public;
-            break;
-        }
-        default:
-        {
-            prevAccess = (Cpp::Keyword)-1;
             break;
         }
         }
@@ -1925,40 +1920,36 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
 
     if (!c.functionOffsets.empty())
     {
-        Cpp::Keyword prevAccess;
-
-        switch (c.keyword)
+        if (prevAccess == Cpp::Keyword::Invalid)
         {
-        case Cpp::Keyword::Class:
-        {
-            prevAccess = (Cpp::Keyword)-1;
-            break;
-        }
-        case Cpp::Keyword::Struct:
-        {
-            prevAccess = Cpp::Keyword::Public;
-
-            for (int offset : c.functionOffsets)
+            switch (c.keyword)
             {
-                if (m_offsetToFunctionMap[offset].memberAccess != Cpp::Keyword::Public)
-                {
-                    prevAccess = (Cpp::Keyword)-1;
-                    break;
-                }
+            case Cpp::Keyword::Class:
+            {
+                prevAccess = Cpp::Keyword::Invalid;
+                break;
             }
+            case Cpp::Keyword::Struct:
+            {
+                prevAccess = Cpp::Keyword::Public;
 
-            break;
-        }
-        case Cpp::Keyword::Union:
-        {
-            prevAccess = Cpp::Keyword::Public;
-            break;
-        }
-        default:
-        {
-            prevAccess = (Cpp::Keyword)-1;
-            break;
-        }
+                for (int offset : c.functionOffsets)
+                {
+                    if (m_offsetToFunctionMap[offset].memberAccess != Cpp::Keyword::Public)
+                    {
+                        prevAccess = Cpp::Keyword::Invalid;
+                        break;
+                    }
+                }
+
+                break;
+            }
+            case Cpp::Keyword::Union:
+            {
+                prevAccess = Cpp::Keyword::Public;
+                break;
+            }
+            }
         }
 
         increaseIndent();

@@ -10,6 +10,7 @@ namespace Cpp
 {
     enum class Keyword
     {
+        Invalid,
         Class,
         Const,
         Enum,
