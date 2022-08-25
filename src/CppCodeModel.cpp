@@ -87,7 +87,8 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeFunctionSizes
     true, // writeFunctionVariableLocations
     true, // writeFunctionDisassembly
-    true, // writeFunctionLineNumbers
+    true, // writeLineNumbers
+    true, // writeLineNumberAddresses
     false, // sortTypesAlphabetically
     true, // sortFunctionsByLineNumber
     true, // inlineMetrowerksAnonymousTypes
@@ -196,7 +197,8 @@ void CppCodeModel::loadSettings()
     m_settings.writeFunctionSizes = settings.value("cppcodemodel/writeFunctionSizes", s_defaultSettings.writeFunctionSizes).toBool();
     m_settings.writeFunctionVariableLocations = settings.value("cppcodemodel/writeFunctionVariableLocations", s_defaultSettings.writeFunctionVariableLocations).toBool();
     m_settings.writeFunctionDisassembly = settings.value("cppcodemodel/writeFunctionDisassembly", s_defaultSettings.writeFunctionDisassembly).toBool();
-    m_settings.writeFunctionLineNumbers = settings.value("cppcodemodel/writeFunctionLineNumbers", s_defaultSettings.writeFunctionLineNumbers).toBool();
+    m_settings.writeLineNumbers = settings.value("cppcodemodel/writeLineNumbers", s_defaultSettings.writeLineNumbers).toBool();
+    m_settings.writeLineNumberAddresses = settings.value("cppcodemodel/writeLineNumberAddresses", s_defaultSettings.writeLineNumberAddresses).toBool();
     m_settings.sortTypesAlphabetically = settings.value("cppcodemodel/sortTypesAlphabetically", s_defaultSettings.sortTypesAlphabetically).toBool();
     m_settings.sortFunctionsByLineNumber = settings.value("cppcodemodel/sortFunctionsByLineNumber", s_defaultSettings.sortFunctionsByLineNumber).toBool();
     m_settings.inlineMetrowerksAnonymousTypes = settings.value("cppcodemodel/inlineMetrowerksAnonymousTypes", s_defaultSettings.inlineMetrowerksAnonymousTypes).toBool();
@@ -249,7 +251,7 @@ void CppCodeModel::saveSettings()
     settings.setValue("cppcodemodel/writeFunctionSizes", m_settings.writeFunctionSizes);
     settings.setValue("cppcodemodel/writeFunctionVariableLocations", m_settings.writeFunctionVariableLocations);
     settings.setValue("cppcodemodel/writeFunctionDisassembly", m_settings.writeFunctionDisassembly);
-    settings.setValue("cppcodemodel/writeFunctionLineNumbers", m_settings.writeFunctionLineNumbers);
+    settings.setValue("cppcodemodel/writeLineNumberAddresses", m_settings.writeLineNumberAddresses);
     settings.setValue("cppcodemodel/sortTypesAlphabetically", m_settings.sortTypesAlphabetically);
     settings.setValue("cppcodemodel/sortFunctionsByLineNumber", m_settings.sortFunctionsByLineNumber);
     settings.setValue("cppcodemodel/inlineMetrowerksAnonymousTypes", m_settings.inlineMetrowerksAnonymousTypes);
@@ -1424,7 +1426,7 @@ void CppCodeModel::parseSourceStatementTable(DwarfSourceStatementTable* table, C
             continue;
         }
 
-        Cpp::FunctionLineNumber l;
+        Cpp::LineNumber l;
         l.line = entry->lineNumber;
         l.character = entry->lineCharacter;
         l.address = entry->address;
@@ -2310,7 +2312,7 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
             leftSize += 4;
             rightSize += 1;
 
-            if (!f.lineNumbers.isEmpty() && m_settings.writeFunctionLineNumbers)
+            if (!f.lineNumbers.isEmpty() && m_settings.writeLineNumbers)
             {
                 int lineNumberIndex = 0;
 
@@ -2322,7 +2324,7 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
                     if (lineNumberIndex < f.lineNumbers.size()
                         && f.lineNumbers[lineNumberIndex].address == disasm.address(line))
                     {
-                        writeFunctionLineNumberComment(code, f.lineNumbers[lineNumberIndex]);
+                        writeLineNumberComment(code, f.lineNumbers[lineNumberIndex]);
                         lineNumberIndex++;
                     }
                 }
@@ -2339,14 +2341,14 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
             writeNewline(code);
         }
     }
-    else if (!f.lineNumbers.isEmpty() && m_settings.writeFunctionLineNumbers)
+    else if (!f.lineNumbers.isEmpty() && m_settings.writeLineNumbers)
     {
         writeNewline(code);
 
-        for (Cpp::FunctionLineNumber& l : f.lineNumbers)
+        for (Cpp::LineNumber& l : f.lineNumbers)
         {
             writeNewline(code);
-            writeFunctionLineNumberComment(code, l);
+            writeLineNumberComment(code, l);
         }
     }
 
@@ -2361,7 +2363,7 @@ void CppCodeModel::writeDisassemblyLineComment(QString& code, const QString& lef
     code += QString("// %1%2").arg(leftText, -leftSize, ' ').arg(rightText, -rightSize, ' ');
 }
 
-void CppCodeModel::writeFunctionLineNumberComment(QString& code, Cpp::FunctionLineNumber& l)
+void CppCodeModel::writeLineNumberComment(QString& code, Cpp::LineNumber& l)
 {
     QStringList comment;
 
@@ -2372,7 +2374,10 @@ void CppCodeModel::writeFunctionLineNumberComment(QString& code, Cpp::FunctionLi
         comment += QString("Character: %1").arg(l.character);
     }
 
-    comment += QString("Address: %1").arg(Util::hexToString(l.address));
+    if (m_settings.writeLineNumberAddresses)
+    {
+        comment += QString("Address: %1").arg(Util::hexToString(l.address));
+    }
 
     writeComment(code, comment.join(", "));
 }
@@ -3190,14 +3195,23 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
             requestRewrite();
         });
 
-    action = commentsMenu->addAction(tr("Function line numbers"));
+    action = commentsMenu->addAction(tr("Line numbers"));
     action->setCheckable(true);
-    action->setChecked(m_settings.writeFunctionLineNumbers);
+    action->setChecked(m_settings.writeLineNumbers);
     connect(action, &QAction::triggered, this, [=]
         {
-            m_settings.writeFunctionLineNumbers = action->isChecked();
+            m_settings.writeLineNumbers = action->isChecked();
             saveSettings();
             requestRewrite();
+        });
+
+    action = commentsMenu->addAction(tr("Line number addresses"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.writeLineNumberAddresses);
+    connect(action, &QAction::triggered, this, [=] {
+        m_settings.writeLineNumberAddresses = action->isChecked();
+        saveSettings();
+        requestRewrite();
         });
 
     /* Warnings */

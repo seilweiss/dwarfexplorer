@@ -166,7 +166,7 @@ namespace Cpp
         QString mangledName;
     };
 
-    struct FunctionLineNumber
+    struct LineNumber
     {
         bool isWholeLine;
         int line;
@@ -185,7 +185,7 @@ namespace Cpp
         Cpp::Keyword memberAccess;
         QString mangledName;
         QList<FunctionVariable> variables;
-        QList<FunctionLineNumber> lineNumbers;
+        QList<LineNumber> lineNumbers;
     };
 
     struct Variable : Declaration
@@ -231,7 +231,8 @@ struct CppCodeModelSettings
     bool writeFunctionSizes;
     bool writeFunctionVariableLocations;
     bool writeFunctionDisassembly;
-    bool writeFunctionLineNumbers;
+    bool writeLineNumbers;
+    bool writeLineNumberAddresses;
     bool sortTypesAlphabetically;
     bool sortFunctionsByLineNumber;
     bool inlineMetrowerksAnonymousTypes;
@@ -319,7 +320,7 @@ private:
     void writeFunctionDeclaration(QString& code, Cpp::Function& f, bool isInsideClass = false);
     void writeFunctionDefinition(QString& code, Cpp::Function& f);
     void writeDisassemblyLineComment(QString& code, const QString& leftText, const QString& rightText, int leftSize, int rightSize);
-    void writeFunctionLineNumberComment(QString& code, Cpp::FunctionLineNumber& l);
+    void writeLineNumberComment(QString& code, Cpp::LineNumber& l);
     void writeFunctionSignature(QString& code, Cpp::Function& f, bool isDeclaration, bool isInsideClass);
     void writeFunctionVariable(QString& code, Cpp::FunctionVariable& v);
     void writeDeclaration(QString& code, Cpp::Declaration& d);
