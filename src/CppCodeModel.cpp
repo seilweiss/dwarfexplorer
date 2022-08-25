@@ -87,6 +87,7 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeFunctionSizes
     true, // writeFunctionVariableLocations
     true, // writeFunctionDisassembly
+    true, // hideThisParameter
     true, // writeLineNumbers
     true, // writeLineNumberAddresses
     false, // sortTypesAlphabetically
@@ -201,6 +202,7 @@ void CppCodeModel::loadSettings()
     m_settings.writeLineNumberAddresses = settings.value("cppcodemodel/writeLineNumberAddresses", s_defaultSettings.writeLineNumberAddresses).toBool();
     m_settings.sortTypesAlphabetically = settings.value("cppcodemodel/sortTypesAlphabetically", s_defaultSettings.sortTypesAlphabetically).toBool();
     m_settings.sortFunctionsByLineNumber = settings.value("cppcodemodel/sortFunctionsByLineNumber", s_defaultSettings.sortFunctionsByLineNumber).toBool();
+    m_settings.hideThisParameter = settings.value("cppcodemodel/hideThisParameter", s_defaultSettings.hideThisParameter).toBool();
     m_settings.inlineMetrowerksAnonymousTypes = settings.value("cppcodemodel/inlineMetrowerksAnonymousTypes", s_defaultSettings.inlineMetrowerksAnonymousTypes).toBool();
     m_settings.hexadecimalEnumValues = settings.value("cppcodemodel/hexadecimalEnumValues", s_defaultSettings.hexadecimalEnumValues).toBool();
     m_settings.forceExplicitEnumValues = settings.value("cppcodemodel/forceExplicitEnumValues", s_defaultSettings.forceExplicitEnumValues).toBool();
@@ -2705,7 +2707,7 @@ void CppCodeModel::writeFunctionParameters(QString& code, Cpp::FunctionType& f, 
 
     for (int i = 0; i < f.parameters.size(); i++)
     {
-        if (f.parameters[i].name == "this")
+        if (f.parameters[i].name == "this" && m_settings.hideThisParameter)
         {
             continue;
         }
@@ -3041,6 +3043,15 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
             m_settings.sortFunctionsByLineNumber = action->isChecked();
             saveSettings();
             requestRewrite();
+        });
+
+    action = menu->addAction(tr("Hide \"this\" parameter"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.hideThisParameter);
+    connect(action, &QAction::triggered, this, [=] {
+        m_settings.hideThisParameter = action->isChecked();
+        saveSettings();
+        requestRewrite();
         });
 
     action = menu->addAction(tr("Inline Metrowerks anonymous types (@class, @enum, etc.)"));
