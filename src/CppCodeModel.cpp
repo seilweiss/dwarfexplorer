@@ -258,6 +258,8 @@ void CppCodeModel::saveSettings()
     settings.setValue("cppcodemodel/writeLineNumberAddresses", m_settings.writeLineNumberAddresses);
     settings.setValue("cppcodemodel/sortTypesAlphabetically", m_settings.sortTypesAlphabetically);
     settings.setValue("cppcodemodel/sortFunctionsByLineNumber", m_settings.sortFunctionsByLineNumber);
+    settings.setValue("cppcodemodel/hideThisParameter", m_settings.hideThisParameter);
+    settings.setValue("cppcodemodel/staticMemberFunctions", m_settings.staticMemberFunctions);
     settings.setValue("cppcodemodel/inlineMetrowerksAnonymousTypes", m_settings.inlineMetrowerksAnonymousTypes);
     settings.setValue("cppcodemodel/hexadecimalEnumValues", m_settings.hexadecimalEnumValues);
     settings.setValue("cppcodemodel/forceExplicitEnumValues", m_settings.forceExplicitEnumValues);
