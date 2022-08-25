@@ -88,6 +88,7 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeFunctionVariableLocations
     true, // writeFunctionDisassembly
     true, // hideThisParameter
+    true, // staticMemberFunctions
     true, // writeLineNumbers
     true, // writeLineNumberAddresses
     false, // sortTypesAlphabetically
@@ -203,6 +204,7 @@ void CppCodeModel::loadSettings()
     m_settings.sortTypesAlphabetically = settings.value("cppcodemodel/sortTypesAlphabetically", s_defaultSettings.sortTypesAlphabetically).toBool();
     m_settings.sortFunctionsByLineNumber = settings.value("cppcodemodel/sortFunctionsByLineNumber", s_defaultSettings.sortFunctionsByLineNumber).toBool();
     m_settings.hideThisParameter = settings.value("cppcodemodel/hideThisParameter", s_defaultSettings.hideThisParameter).toBool();
+    m_settings.staticMemberFunctions = settings.value("cppcodemodel/staticMemberFunctions", s_defaultSettings.staticMemberFunctions).toBool();
     m_settings.inlineMetrowerksAnonymousTypes = settings.value("cppcodemodel/inlineMetrowerksAnonymousTypes", s_defaultSettings.inlineMetrowerksAnonymousTypes).toBool();
     m_settings.hexadecimalEnumValues = settings.value("cppcodemodel/hexadecimalEnumValues", s_defaultSettings.hexadecimalEnumValues).toBool();
     m_settings.forceExplicitEnumValues = settings.value("cppcodemodel/forceExplicitEnumValues", s_defaultSettings.forceExplicitEnumValues).toBool();
@@ -2408,7 +2410,7 @@ void CppCodeModel::writeFunctionSignature(QString& code, Cpp::Function& f, bool 
     }
 
     if ((!f.isMember && !f.isGlobal)
-        || (f.isMember && !isNonStaticMemberFunction && isInsideClass))
+        || (f.isMember && !isNonStaticMemberFunction && isInsideClass && m_settings.staticMemberFunctions))
     {
         writeKeyword(code, Cpp::Keyword::Static);
         code += " ";
@@ -3050,6 +3052,15 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     action->setChecked(m_settings.hideThisParameter);
     connect(action, &QAction::triggered, this, [=] {
         m_settings.hideThisParameter = action->isChecked();
+        saveSettings();
+        requestRewrite();
+        });
+
+    action = menu->addAction(tr("Static member functions"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.staticMemberFunctions);
+    connect(action, &QAction::triggered, this, [=] {
+        m_settings.staticMemberFunctions = action->isChecked();
         saveSettings();
         requestRewrite();
         });

@@ -236,6 +236,7 @@ struct CppCodeModelSettings
     bool sortTypesAlphabetically;
     bool sortFunctionsByLineNumber;
     bool hideThisParameter;
+    bool staticMemberFunctions;
     bool inlineMetrowerksAnonymousTypes;
     bool hexadecimalEnumValues;
     bool forceExplicitEnumValues;
