@@ -150,8 +150,6 @@ void MainWindow::openFile(const QString& path)
         error = true;
         errorString = tr("Could not open file %1").arg(path);
         break;
-        QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(path));
-        return;
     case Elf::ReadFailed:
         error = true;
         errorString = tr("Could not read file %1").arg(path);
