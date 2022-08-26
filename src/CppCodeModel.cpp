@@ -1694,16 +1694,19 @@ void CppCodeModel::writeFiles(QString& code, const QList<Elf32_Off>& fileOffsets
                 {
                     continue;
                 }
+                break;
             case DW_TAG_subroutine_type:
                 if (!m_settings.writeFunctionTypes)
                 {
                     continue;
                 }
+                break;
             case DW_TAG_ptr_to_member_type:
                 if (!m_settings.writePointerToMemberTypes)
                 {
                     continue;
                 }
+                break;
             }
 
             writeDwarfEntry(code, entry->offset);
