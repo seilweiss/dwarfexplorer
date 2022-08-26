@@ -87,14 +87,14 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeFunctionSizes
     true, // writeFunctionVariableLocations
     true, // writeFunctionDisassembly
-    true, // hideThisParameter
-    true, // staticMemberFunctions
-    true, // anonymousStructsUnions
     true, // writeLineNumbers
     true, // writeLineNumberAddresses
     false, // sortTypesAlphabetically
     true, // sortFunctionsByLineNumber
     false, // treatClassesAsStructs
+    true, // hideThisParameter
+    true, // staticMemberFunctions
+    true, // anonymousStructsUnions
     true, // inlineMetrowerksAnonymousTypes
     false, // hexadecimalEnumValues
     false, // forceExplicitEnumValues
