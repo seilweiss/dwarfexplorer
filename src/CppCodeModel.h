@@ -237,6 +237,7 @@ struct CppCodeModelSettings
     bool sortFunctionsByLineNumber;
     bool hideThisParameter;
     bool staticMemberFunctions;
+    bool anonymousStructsUnions;
     bool inlineMetrowerksAnonymousTypes;
     bool hexadecimalEnumValues;
     bool forceExplicitEnumValues;

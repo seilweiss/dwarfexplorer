@@ -89,6 +89,7 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeFunctionDisassembly
     true, // hideThisParameter
     true, // staticMemberFunctions
+    true, // anonymousStructsUnions
     true, // writeLineNumbers
     true, // writeLineNumberAddresses
     false, // sortTypesAlphabetically
@@ -205,6 +206,7 @@ void CppCodeModel::loadSettings()
     m_settings.sortFunctionsByLineNumber = settings.value("cppcodemodel/sortFunctionsByLineNumber", s_defaultSettings.sortFunctionsByLineNumber).toBool();
     m_settings.hideThisParameter = settings.value("cppcodemodel/hideThisParameter", s_defaultSettings.hideThisParameter).toBool();
     m_settings.staticMemberFunctions = settings.value("cppcodemodel/staticMemberFunctions", s_defaultSettings.staticMemberFunctions).toBool();
+    m_settings.anonymousStructsUnions = settings.value("cppcodemodel/anonymousStructsUnions", s_defaultSettings.anonymousStructsUnions).toBool();
     m_settings.inlineMetrowerksAnonymousTypes = settings.value("cppcodemodel/inlineMetrowerksAnonymousTypes", s_defaultSettings.inlineMetrowerksAnonymousTypes).toBool();
     m_settings.hexadecimalEnumValues = settings.value("cppcodemodel/hexadecimalEnumValues", s_defaultSettings.hexadecimalEnumValues).toBool();
     m_settings.forceExplicitEnumValues = settings.value("cppcodemodel/forceExplicitEnumValues", s_defaultSettings.forceExplicitEnumValues).toBool();
@@ -260,6 +262,7 @@ void CppCodeModel::saveSettings()
     settings.setValue("cppcodemodel/sortFunctionsByLineNumber", m_settings.sortFunctionsByLineNumber);
     settings.setValue("cppcodemodel/hideThisParameter", m_settings.hideThisParameter);
     settings.setValue("cppcodemodel/staticMemberFunctions", m_settings.staticMemberFunctions);
+    settings.setValue("cppcodemodel/anonymousStructsUnions", m_settings.anonymousStructsUnions);
     settings.setValue("cppcodemodel/inlineMetrowerksAnonymousTypes", m_settings.inlineMetrowerksAnonymousTypes);
     settings.setValue("cppcodemodel/hexadecimalEnumValues", m_settings.hexadecimalEnumValues);
     settings.setValue("cppcodemodel/forceExplicitEnumValues", m_settings.forceExplicitEnumValues);
@@ -1897,9 +1900,13 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
         increaseIndent();
 
         bool first = true;
+        QList<QPair<int, int>> anonUnionStack;
+        QList<QPair<int, int>> anonStructStack;
 
-        for (Cpp::ClassMember& m : c.members)
+        for (int i = 0; i < c.members.size(); i++)
         {
+            Cpp::ClassMember& m = c.members[i];
+
             if (m.access != prevAccess)
             {
                 writeNewline(code, false);
@@ -1914,7 +1921,89 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
             }
 
             writeNewline(code);
+
+            if (m_settings.anonymousStructsUnions)
+            {
+                if ((anonUnionStack.empty() && c.keyword != Cpp::Keyword::Union)
+                    || !anonStructStack.empty())
+                {
+                    int foundIndex = -1;
+                    int endIndex = !anonStructStack.empty() ?
+                        anonStructStack.back().second :
+                        c.members.size() - 1;
+
+                    for (int j = endIndex; j > i; j--)
+                    {
+                        if (c.members[j].offset == m.offset
+                            && c.members[j].bitOffset == m.bitOffset)
+                        {
+                            foundIndex = j;
+                            break;
+                        }
+                    }
+
+                    if (foundIndex != -1)
+                    {
+                        anonUnionStack.push_back({ i, foundIndex });
+                        writeKeyword(code, Cpp::Keyword::Union);
+                        writeNewline(code);
+                        code += "{";
+                        increaseIndent();
+                        writeNewline(code);
+                    }
+                }
+
+                if ((!anonUnionStack.empty() || c.keyword == Cpp::Keyword::Union)
+                    && anonStructStack.empty())
+                {
+                    int foundIndex = -1;
+                    int endIndex = !anonUnionStack.empty() ?
+                        anonUnionStack.back().second :
+                        c.members.size() - 1;
+
+                    for (int j = i + 1; j <= endIndex; j++)
+                    {
+                        if (c.members[j].offset == m.offset
+                            && c.members[j].bitOffset == m.bitOffset)
+                        {
+                            break;
+                        }
+
+                        foundIndex = j;
+                    }
+
+                    if (foundIndex != -1)
+                    {
+                        anonStructStack.push_back({ i, foundIndex });
+                        writeKeyword(code, Cpp::Keyword::Struct);
+                        writeNewline(code);
+                        code += "{";
+                        increaseIndent();
+                        writeNewline(code);
+                    }
+                }
+            }
+
             writeClassMember(code, m);
+
+            if (m_settings.anonymousStructsUnions)
+            {
+                if (!anonStructStack.empty() && i == anonStructStack.back().second)
+                {
+                    anonStructStack.pop_back();
+                    decreaseIndent();
+                    writeNewline(code);
+                    code += "};";
+                }
+
+                if (!anonUnionStack.empty() && i == anonUnionStack.back().second)
+                {
+                    anonUnionStack.pop_back();
+                    decreaseIndent();
+                    writeNewline(code);
+                    code += "};";
+                }
+            }
 
             prevAccess = m.access;
             first = false;
@@ -3063,6 +3152,15 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
     action->setChecked(m_settings.staticMemberFunctions);
     connect(action, &QAction::triggered, this, [=] {
         m_settings.staticMemberFunctions = action->isChecked();
+        saveSettings();
+        requestRewrite();
+        });
+
+    action = menu->addAction(tr("Anonymous structs/unions (experimental)"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.anonymousStructsUnions);
+    connect(action, &QAction::triggered, this, [=] {
+        m_settings.anonymousStructsUnions = action->isChecked();
         saveSettings();
         requestRewrite();
         });
