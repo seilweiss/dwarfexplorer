@@ -6,6 +6,7 @@
 #include "TreeView.h"
 
 #include <qlineedit.h>
+#include <qtimer.h>
 
 class FilesView : public QWidget
 {
@@ -26,6 +27,7 @@ private:
     TreeView* m_treeView;
     QLineEdit* m_filterLineEdit;
     FilesModel* m_model;
+    QTimer* m_filterDelay;
 
     void updateFilter(const QModelIndex& parent = QModelIndex());
 

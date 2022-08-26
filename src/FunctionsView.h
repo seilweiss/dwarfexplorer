@@ -6,6 +6,7 @@
 #include "TreeView.h"
 
 #include <qlineedit.h>
+#include <qtimer.h>
 
 class FunctionsView : public QWidget
 {
@@ -25,6 +26,7 @@ private:
     TreeView* m_treeView;
     QLineEdit* m_filterLineEdit;
     FunctionsModel* m_model;
+    QTimer* m_filterDelay;
 
     void updateFilter();
 

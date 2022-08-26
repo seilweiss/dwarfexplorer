@@ -6,6 +6,7 @@
 #include "TreeView.h"
 
 #include <qlineedit.h>
+#include <qtimer.h>
 
 class TypesView : public QWidget
 {
@@ -25,6 +26,7 @@ private:
     TreeView* m_treeView;
     QLineEdit* m_filterLineEdit;
     TypesModel* m_model;
+    QTimer* m_filterDelay;
 
     void updateSpans();
     void updateFilter();

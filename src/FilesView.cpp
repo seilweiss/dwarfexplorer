@@ -8,8 +8,12 @@ FilesView::FilesView(QWidget* parent)
     , m_treeView(new TreeView)
     , m_filterLineEdit(new QLineEdit)
     , m_model(nullptr)
+    , m_filterDelay(new QTimer(this))
 {
     connect(m_filterLineEdit, &QLineEdit::textChanged, this, &FilesView::onFilterLineEditTextChanged);
+
+    m_filterDelay->setSingleShot(true);
+    connect(m_filterDelay, &QTimer::timeout, this, [=] { updateFilter(); });
 
     QVBoxLayout* mainLayout = new QVBoxLayout;
 
@@ -84,5 +88,5 @@ void FilesView::currentChanged(const QModelIndex& current, const QModelIndex& pr
 
 void FilesView::onFilterLineEditTextChanged(const QString& text)
 {
-    updateFilter();
+    m_filterDelay->start(500);
 }

@@ -9,11 +9,15 @@ FunctionsView::FunctionsView(QWidget* parent)
     , m_treeView(new TreeView)
     , m_filterLineEdit(new QLineEdit)
     , m_model(nullptr)
+    , m_filterDelay(new QTimer(this))
 {
     m_treeView->setSortingEnabled(true);
     m_treeView->sortByColumn(FunctionsModel::DwarfOffsetColumn, Qt::AscendingOrder);
 
     connect(m_filterLineEdit, &QLineEdit::textChanged, this, &FunctionsView::onFilterLineEditTextChanged);
+
+    m_filterDelay->setSingleShot(true);
+    connect(m_filterDelay, &QTimer::timeout, this, &FunctionsView::updateFilter);
 
     QVBoxLayout* mainLayout = new QVBoxLayout;
 
@@ -95,5 +99,5 @@ void FunctionsView::currentChanged(const QModelIndex& current, const QModelIndex
 
 void FunctionsView::onFilterLineEditTextChanged(const QString& text)
 {
-    updateFilter();
+    m_filterDelay->start(500);
 }

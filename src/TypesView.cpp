@@ -9,11 +9,15 @@ TypesView::TypesView(QWidget* parent)
     , m_treeView(new TreeView)
     , m_filterLineEdit(new QLineEdit)
     , m_model(nullptr)
+    , m_filterDelay(new QTimer(this))
 {
     // sorting not implemented yet
     //m_treeView->setSortingEnabled(true);
 
     connect(m_filterLineEdit, &QLineEdit::textChanged, this, &TypesView::onFilterLineEditTextChanged);
+    
+    m_filterDelay->setSingleShot(true);
+    connect(m_filterDelay, &QTimer::timeout, this, &TypesView::updateFilter);
 
     QVBoxLayout* mainLayout = new QVBoxLayout;
 
@@ -113,5 +117,5 @@ void TypesView::onModelDwarfChanged(Dwarf* dwarf)
 
 void TypesView::onFilterLineEditTextChanged(const QString& text)
 {
-    updateFilter();
+    m_filterDelay->start(500);
 }
