@@ -235,6 +235,7 @@ struct CppCodeModelSettings
     bool writeLineNumberAddresses;
     bool sortTypesAlphabetically;
     bool sortFunctionsByLineNumber;
+    bool treatClassesAsStructs;
     bool hideThisParameter;
     bool staticMemberFunctions;
     bool anonymousStructsUnions;

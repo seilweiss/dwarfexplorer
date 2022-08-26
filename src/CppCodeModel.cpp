@@ -94,6 +94,7 @@ CppCodeModelSettings CppCodeModel::s_defaultSettings
     true, // writeLineNumberAddresses
     false, // sortTypesAlphabetically
     true, // sortFunctionsByLineNumber
+    false, // treatClassesAsStructs
     true, // inlineMetrowerksAnonymousTypes
     false, // hexadecimalEnumValues
     false, // forceExplicitEnumValues
@@ -205,6 +206,7 @@ void CppCodeModel::loadSettings()
     m_settings.writeLineNumberAddresses = settings.value("cppcodemodel/writeLineNumberAddresses", s_defaultSettings.writeLineNumberAddresses).toBool();
     m_settings.sortTypesAlphabetically = settings.value("cppcodemodel/sortTypesAlphabetically", s_defaultSettings.sortTypesAlphabetically).toBool();
     m_settings.sortFunctionsByLineNumber = settings.value("cppcodemodel/sortFunctionsByLineNumber", s_defaultSettings.sortFunctionsByLineNumber).toBool();
+    m_settings.treatClassesAsStructs = settings.value("cppcodemodel/treatClassesAsStructs", s_defaultSettings.treatClassesAsStructs).toBool();
     m_settings.hideThisParameter = settings.value("cppcodemodel/hideThisParameter", s_defaultSettings.hideThisParameter).toBool();
     m_settings.staticMemberFunctions = settings.value("cppcodemodel/staticMemberFunctions", s_defaultSettings.staticMemberFunctions).toBool();
     m_settings.anonymousStructsUnions = settings.value("cppcodemodel/anonymousStructsUnions", s_defaultSettings.anonymousStructsUnions).toBool();
@@ -261,6 +263,7 @@ void CppCodeModel::saveSettings()
     settings.setValue("cppcodemodel/writeLineNumberAddresses", m_settings.writeLineNumberAddresses);
     settings.setValue("cppcodemodel/sortTypesAlphabetically", m_settings.sortTypesAlphabetically);
     settings.setValue("cppcodemodel/sortFunctionsByLineNumber", m_settings.sortFunctionsByLineNumber);
+    settings.setValue("cppcodemodel/treatClassesAsStructs", m_settings.treatClassesAsStructs);
     settings.setValue("cppcodemodel/hideThisParameter", m_settings.hideThisParameter);
     settings.setValue("cppcodemodel/staticMemberFunctions", m_settings.staticMemberFunctions);
     settings.setValue("cppcodemodel/anonymousStructsUnions", m_settings.anonymousStructsUnions);
@@ -1801,7 +1804,14 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
         writeNewline(code);
     }
 
-    writeKeyword(code, c.keyword);
+    Cpp::Keyword classKeyword = c.keyword;
+
+    if (classKeyword == Cpp::Keyword::Class && m_settings.treatClassesAsStructs)
+    {
+        classKeyword = Cpp::Keyword::Struct;
+    }
+
+    writeKeyword(code, classKeyword);
 
     if (!isInline && !c.name.isEmpty())
     {
@@ -1817,15 +1827,15 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
             Cpp::ClassInheritance& in = c.inheritances[i];
             bool explicitAccess = false;
 
-            if (c.keyword == Cpp::Keyword::Class && in.access != Cpp::Keyword::Private)
+            if (classKeyword == Cpp::Keyword::Class && in.access != Cpp::Keyword::Private)
             {
                 explicitAccess = true;
             }
-            else if (c.keyword == Cpp::Keyword::Struct && in.access != Cpp::Keyword::Public)
+            else if (classKeyword == Cpp::Keyword::Struct && in.access != Cpp::Keyword::Public)
             {
                 explicitAccess = true;
             }
-            else if (c.keyword == Cpp::Keyword::Union && in.access != Cpp::Keyword::Public)
+            else if (classKeyword == Cpp::Keyword::Union && in.access != Cpp::Keyword::Public)
             {
                 explicitAccess = true;
             }
@@ -1871,7 +1881,7 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
 
     if (!c.members.empty())
     {
-        switch (c.keyword)
+        switch (classKeyword)
         {
         case Cpp::Keyword::Class:
         {
@@ -1927,7 +1937,7 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
 
             if (m_settings.anonymousStructsUnions)
             {
-                if ((anonUnionStack.empty() && c.keyword != Cpp::Keyword::Union)
+                if ((anonUnionStack.empty() && classKeyword != Cpp::Keyword::Union)
                     || !anonStructStack.empty())
                 {
                     int foundIndex = -1;
@@ -1956,7 +1966,7 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
                     }
                 }
 
-                if ((!anonUnionStack.empty() || c.keyword == Cpp::Keyword::Union)
+                if ((!anonUnionStack.empty() || classKeyword == Cpp::Keyword::Union)
                     && anonStructStack.empty())
                 {
                     int foundIndex = -1;
@@ -2022,7 +2032,7 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
     {
         if (prevAccess == Cpp::Keyword::Invalid)
         {
-            switch (c.keyword)
+            switch (classKeyword)
             {
             case Cpp::Keyword::Class:
             {
@@ -3149,6 +3159,15 @@ void CppCodeModel::setupSettingsMenu(QMenu* menu)
             m_settings.sortFunctionsByLineNumber = action->isChecked();
             saveSettings();
             requestRewrite();
+        });
+
+    action = menu->addAction(tr("Treat classes as structs"));
+    action->setCheckable(true);
+    action->setChecked(m_settings.treatClassesAsStructs);
+    connect(action, &QAction::triggered, this, [=] {
+        m_settings.treatClassesAsStructs = action->isChecked();
+        saveSettings();
+        requestRewrite();
         });
 
     action = menu->addAction(tr("Hide \"this\" parameter"));
