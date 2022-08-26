@@ -152,6 +152,7 @@ CppCodeModel::CppCodeModel(QObject* parent)
     , m_offsetToFunctionMap()
     , m_offsetToVariableMap()
     , m_indentLevel(0)
+    , m_minIndentLevel(0)
     , m_firstSourceStatementTableParsed(false)
 {
     loadSettings();
@@ -1780,6 +1781,8 @@ void CppCodeModel::writeFiles(QString& code, const QList<Elf32_Off>& fileOffsets
 
 void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInline)
 {
+    m_minIndentLevel = m_indentLevel;
+
     QStringList comment;
 
     if (m_settings.writeClassSizes)
@@ -2094,6 +2097,8 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
     {
         code += ";";
     }
+
+    m_minIndentLevel = 0;
 }
 
 void CppCodeModel::writeClassMember(QString& code, Cpp::ClassMember& m)
@@ -2926,6 +2931,13 @@ void CppCodeModel::writeNewline(QString& code, bool indent)
             code += "    ";
         }
     }
+    else
+    {
+        for (int i = 0; i < m_minIndentLevel; i++)
+        {
+            code += "    ";
+        }
+    }
 }
 
 void CppCodeModel::increaseIndent()
@@ -2941,6 +2953,7 @@ void CppCodeModel::decreaseIndent()
 void CppCodeModel::resetIndent()
 {
     m_indentLevel = 0;
+    m_minIndentLevel = 0;
 }
 
 bool CppCodeModel::typeCanBeInlined(const QString& name) const
