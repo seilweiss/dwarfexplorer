@@ -80,6 +80,9 @@ void TypesModel::refresh()
                 case DW_TAG_structure_type:
                     typeKeyword = "struct";
                     break;
+                case DW_TAG_union_type:
+                    typeKeyword = "union";
+                    break;
                 case DW_TAG_enumeration_type:
                     typeKeyword = "enum";
                     break;
