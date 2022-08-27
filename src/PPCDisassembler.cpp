@@ -1,6 +1,6 @@
 #include "PPCDisassembler.h"
 
-#include "Common/GekkoDisassembler.h"
+#include "capstone/capstone.h"
 
 #include <qendian.h>
 
@@ -18,16 +18,39 @@ bool PPCDisassembler::disassemble(Disassembly& disasm, const Elf* elf, Elf32_Add
         return false;
     }
 
-    for (Elf32_Addr address = startAddress; address < endAddress; address += 4)
-    {
-        u32 opcode = *(u32*)(data + (address - startAddress));
-        bool bigEndian = Q_BYTE_ORDER == Q_BIG_ENDIAN;
-        QString text = QString::fromStdString(Common::GekkoDisassembler::Disassemble(opcode, address, bigEndian));
-        QString leftText = text.section('\t', 0, 0);
-        QString rightText = text.section('\t', 1);
+    csh handle;
+    cs_insn* insn;
+    size_t count;
 
-        disasm.addLine(address, leftText, rightText);
+    if (cs_open(CS_ARCH_PPC, (cs_mode)(CS_MODE_32 + CS_MODE_BIG_ENDIAN), &handle) != CS_ERR_OK)
+    {
+        return false;
     }
 
-    return true;
+    cs_option(handle, CS_OPT_SKIPDATA, CS_OPT_ON);
+
+    bool success = true;
+
+    count = cs_disasm(handle, (uint8_t*)data, endAddress - startAddress, startAddress, 0, &insn);
+
+    if (count == 0)
+    {
+        success = false;
+    }
+    else
+    {
+        Elf32_Addr address = startAddress;
+
+        for (size_t i = 0; i < count; i++)
+        {
+            disasm.addLine(address, insn[i].mnemonic, insn[i].op_str);
+            address += 4;
+        }
+
+        cs_free(insn, count);
+    }
+
+    cs_close(&handle);
+
+    return success;
 }

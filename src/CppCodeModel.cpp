@@ -2453,6 +2453,10 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
 
             writeNewline(code);
         }
+        else
+        {
+            Output::write(tr("Warning: Failed to disassemble function %1").arg(f.name));
+        }
     }
     else if (!f.lineNumbers.isEmpty() && m_settings.writeLineNumbers)
     {

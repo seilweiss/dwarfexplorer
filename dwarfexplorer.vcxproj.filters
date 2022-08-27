@@ -108,11 +108,6 @@
     <ClCompile Include="src\Disassemblers.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
-    <ClCompile Include="dolphin\Source\Core\Common\GekkoDisassembler.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
-    <ClCompile Include="dolphin\Externals\fmt\src\format.cc" />
-    <ClCompile Include="dolphin\Externals\fmt\src\os.cc" />
     <ClCompile Include="src\TreeView.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
@@ -146,51 +141,6 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Disassemblers.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Source\Core\Common\CommonTypes.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Source\Core\Common\GekkoDisassembler.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\args.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\chrono.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\color.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\compile.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\core.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\format.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\format-inl.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\locale.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\os.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\ostream.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\printf.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\ranges.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\xchar.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -254,8 +204,5 @@
     <QtMoc Include="src\TreeView.h">
       <Filter>Generated Files</Filter>
     </QtMoc>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="dolphin\Externals\fmt\support\rtd\theme\layout.html" />
   </ItemGroup>
 </Project>
