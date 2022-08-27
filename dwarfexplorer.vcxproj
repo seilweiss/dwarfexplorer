@@ -78,7 +78,7 @@
   </ImportGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>GeneratedFiles\$(ConfigurationName);GeneratedFiles;.;release;/include;qscintilla/src;QtAwesome/QtAwesome;dolphin/Source/Core;dolphin/Externals/fmt/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>GeneratedFiles\$(ConfigurationName);GeneratedFiles;.;release;/include;include/qscintilla/src;include/QtAwesome/QtAwesome;include/dolphin/Source/Core;include/dolphin/Externals/fmt/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -permissive- -Zc:__cplusplus -Zc:externConstexpr -utf-8 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>release\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
@@ -99,7 +99,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(QTDIR)\lib\Qt6Widgets.lib;$(QTDIR)\lib\Qt6Gui.lib;$(QTDIR)\lib\Qt6Core.lib;$(QTDIR)\lib\Qt6EntryPoint.lib;shell32.lib;qscintilla/src/$(Configuration)/qscintilla2_qt6.lib;QtAwesome/QtAwesome/$(Configuration)/QtAwesome.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(QTDIR)\lib\Qt6Widgets.lib;$(QTDIR)\lib\Qt6Gui.lib;$(QTDIR)\lib\Qt6Core.lib;$(QTDIR)\lib\Qt6EntryPoint.lib;shell32.lib;include/qscintilla/src/$(Configuration)/qscintilla2_qt6.lib;include/QtAwesome/QtAwesome/$(Configuration)/QtAwesome.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
       <DataExecutionPrevention>true</DataExecutionPrevention>
@@ -130,12 +130,12 @@
       <QtMocFileName>moc_%(Filename).cpp</QtMocFileName>
     </QtMoc>
     <PostBuildEvent>
-      <Command>xcopy /y /d  "$(ProjectDir)qscintilla\src\$(Configuration)\qscintilla2_qt6.dll" "$(TargetDir)"</Command>
+      <Command>xcopy /y /d  "$(ProjectDir)include\qscintilla\src\$(Configuration)\qscintilla2_qt6.dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>GeneratedFiles\$(ConfigurationName);GeneratedFiles;.;debug;/include;qscintilla/src;QtAwesome/QtAwesome;dolphin/Source/Core;dolphin/Externals/fmt/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>GeneratedFiles\$(ConfigurationName);GeneratedFiles;.;debug;/include;include/qscintilla/src;include/QtAwesome/QtAwesome;include/dolphin/Source/Core;include/dolphin/Externals/fmt/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -permissive- -Zc:__cplusplus -Zc:externConstexpr -utf-8 -w34100 -w34189 -w44996 -w44456 -w44457 -w44458 %(AdditionalOptions)</AdditionalOptions>
       <AssemblerListingLocation>debug\</AssemblerListingLocation>
       <BrowseInformation>false</BrowseInformation>
@@ -154,7 +154,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(QTDIR)\lib\Qt6Widgetsd.lib;$(QTDIR)\lib\Qt6Guid.lib;$(QTDIR)\lib\Qt6Cored.lib;$(QTDIR)\lib\Qt6EntryPointd.lib;shell32.lib;qscintilla/src/$(Configuration)/qscintilla2_qt6d.lib;QtAwesome/QtAwesome/$(Configuration)/QtAwesome.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(QTDIR)\lib\Qt6Widgetsd.lib;$(QTDIR)\lib\Qt6Guid.lib;$(QTDIR)\lib\Qt6Cored.lib;$(QTDIR)\lib\Qt6EntryPointd.lib;shell32.lib;include/qscintilla/src/$(Configuration)/qscintilla2_qt6d.lib;include/QtAwesome/QtAwesome/$(Configuration)/QtAwesome.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>"/MANIFESTDEPENDENCY:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' language='*' processorArchitecture='*'" %(AdditionalOptions)</AdditionalOptions>
       <DataExecutionPrevention>true</DataExecutionPrevention>
@@ -182,13 +182,13 @@
       <QtMocFileName>moc_%(Filename).cpp</QtMocFileName>
     </QtMoc>
     <PostBuildEvent>
-      <Command>xcopy /y /d  "$(ProjectDir)qscintilla\src\$(Configuration)\qscintilla2_qt6d.dll" "$(TargetDir)"</Command>
+      <Command>xcopy /y /d  "$(ProjectDir)include\qscintilla\src\$(Configuration)\qscintilla2_qt6d.dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="dolphin\Externals\fmt\src\format.cc" />
-    <ClCompile Include="dolphin\Externals\fmt\src\os.cc" />
-    <ClCompile Include="dolphin\Source\Core\Common\GekkoDisassembler.cpp" />
+    <ClCompile Include="include\dolphin\Externals\fmt\src\format.cc" />
+    <ClCompile Include="include\dolphin\Externals\fmt\src\os.cc" />
+    <ClCompile Include="include\dolphin\Source\Core\Common\GekkoDisassembler.cpp" />
     <ClCompile Include="src\AbstractDisassembler.cpp" />
     <ClCompile Include="src\CppFundamentalTypeNamesDialog.cpp" />
     <ClCompile Include="src\Disassemblers.cpp" />
@@ -224,21 +224,21 @@
     <QtMoc Include="src\FunctionsView.h" />
     <QtMoc Include="src\CppFundamentalTypeNamesDialog.h" />
     <QtMoc Include="src\AbstractDisassembler.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\args.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\chrono.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\color.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\compile.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\core.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\format-inl.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\format.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\locale.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\os.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\ostream.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\printf.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\ranges.h" />
-    <ClInclude Include="dolphin\Externals\fmt\include\fmt\xchar.h" />
-    <ClInclude Include="dolphin\Source\Core\Common\CommonTypes.h" />
-    <ClInclude Include="dolphin\Source\Core\Common\GekkoDisassembler.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\args.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\chrono.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\color.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\compile.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\core.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\format-inl.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\format.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\locale.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\os.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\ostream.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\printf.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\ranges.h" />
+    <ClInclude Include="include\dolphin\Externals\fmt\include\fmt\xchar.h" />
+    <ClInclude Include="include\dolphin\Source\Core\Common\CommonTypes.h" />
+    <ClInclude Include="include\dolphin\Source\Core\Common\GekkoDisassembler.h" />
     <ClInclude Include="src\Disassemblers.h" />
     <ClInclude Include="src\Disassembly.h" />
     <ClInclude Include="src\Icons.h" />
@@ -283,7 +283,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="dolphin\Externals\fmt\support\rtd\theme\layout.html" />
+    <None Include="include\dolphin\Externals\fmt\support\rtd\theme\layout.html" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
