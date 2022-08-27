@@ -2405,6 +2405,8 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
         writeFunctionVariable(code, v);
     }
 
+    bool wroteDisassembly = false;
+
     if (m_settings.writeFunctionDisassembly)
     {
         Disassembly disasm;
@@ -2452,13 +2454,16 @@ void CppCodeModel::writeFunctionDefinition(QString& code, Cpp::Function& f)
             }
 
             writeNewline(code);
+
+            wroteDisassembly = true;
         }
         else
         {
             Output::write(tr("Warning: Failed to disassemble function %1").arg(f.name));
         }
     }
-    else if (!f.lineNumbers.isEmpty() && m_settings.writeLineNumbers)
+    
+    if (!wroteDisassembly && !f.lineNumbers.isEmpty() && m_settings.writeLineNumbers)
     {
         writeNewline(code);
 
