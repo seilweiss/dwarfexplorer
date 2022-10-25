@@ -138,6 +138,19 @@ QHash<Cpp::Keyword, QString> CppCodeModel::s_keywordToStringMap =
     { Cpp::Keyword::Volatile, "volatile" },
 };
 
+static void sortFunctionsByLineNumber(QList<Cpp::Function*>& functions)
+{
+    std::sort(functions.begin(), functions.end(),
+        [](Cpp::Function* a, Cpp::Function* b) {
+            if (a->lineNumbers.isEmpty() || b->lineNumbers.isEmpty())
+            {
+                return false;
+            }
+
+            return a->lineNumbers[0].line < b->lineNumbers[0].line;
+        });
+}
+
 CppCodeModel::CppCodeModel(QObject* parent)
     : AbstractCodeModel(parent)
     , m_settings()
@@ -1750,16 +1763,7 @@ void CppCodeModel::writeFiles(QString& code, const QList<Elf32_Off>& fileOffsets
 
         if (m_settings.sortFunctionsByLineNumber)
         {
-            std::sort(functions.begin(), functions.end(),
-                [](Cpp::Function* a, Cpp::Function* b)
-                {
-                    if (a->lineNumbers.isEmpty() || b->lineNumbers.isEmpty())
-                    {
-                        return false;
-                    }
-
-                    return a->lineNumbers[0].line < b->lineNumbers[0].line;
-                });
+            sortFunctionsByLineNumber(functions);
         }
 
         if (m_settings.writeFunctionDeclarations)
@@ -2033,6 +2037,18 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
 
     if (!c.functionOffsets.empty())
     {
+        QList<Cpp::Function*> functions;
+
+        for (Elf32_Off offset : c.functionOffsets)
+        {
+            functions.append(&m_offsetToFunctionMap[offset]);
+        }
+
+        if (m_settings.sortFunctionsByLineNumber)
+        {
+            sortFunctionsByLineNumber(functions);
+        }
+
         if (prevAccess == Cpp::Keyword::Invalid)
         {
             switch (classKeyword)
@@ -2046,9 +2062,9 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
             {
                 prevAccess = Cpp::Keyword::Public;
 
-                for (int offset : c.functionOffsets)
+                for (Cpp::Function* f : functions)
                 {
-                    if (m_offsetToFunctionMap[offset].memberAccess != Cpp::Keyword::Public)
+                    if (f->memberAccess != Cpp::Keyword::Public)
                     {
                         prevAccess = Cpp::Keyword::Invalid;
                         break;
@@ -2069,11 +2085,9 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
 
         bool first = true;
 
-        for (int offset : c.functionOffsets)
+        for (Cpp::Function* f : functions)
         {
-            Cpp::Function& f = m_offsetToFunctionMap[offset];
-
-            if (f.memberAccess != prevAccess)
+            if (f->memberAccess != prevAccess)
             {
                 writeNewline(code, false);
 
@@ -2082,14 +2096,14 @@ void CppCodeModel::writeClassType(QString& code, Cpp::ClassType& c, bool isInlin
                     writeNewline(code, false);
                 }
 
-                writeKeyword(code, f.memberAccess);
+                writeKeyword(code, f->memberAccess);
                 code += ":";
             }
 
             writeNewline(code);
-            writeFunctionDeclaration(code, f, true);
+            writeFunctionDeclaration(code, *f, true);
 
-            prevAccess = f.memberAccess;
+            prevAccess = f->memberAccess;
             first = false;
         }
 
